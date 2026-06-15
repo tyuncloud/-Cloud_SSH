@@ -57,16 +57,19 @@
 ### 安全可靠
 
 - **端到端加密**：完整的 SSH-2.0 协议实现，包括 ECDH 密钥交换、Ed25519 签名认证以及 AES-256-GCM 数据加密。
+- **安全加固体系**：内置针对 IPv6 与保留地址的 SSRF 防护、API 请求频率限制（防爆破），并在本地使用 AES-GCM 算法加密存储您的服务器凭证。
 - **隔离的会话状态**：借助 Cloudflare Durable Objects 和 Hibernation API，每个终端会话都在沙盒内安全、持久地运行。
 
 <a id="features"></a>
 ## 核心特性
 
 - **完整的 SSH 握手**：原生 TypeScript 实现 SSH 传输层协议与用户认证协议。
-- **密码认证**：支持标准 SSH 密码认证。
-- **全功能终端**：基于 `xterm.js`，支持颜色输出、自适应窗口大小调整 (Window Adjust)。
-- **持久化连接**：基于 Durable Objects 的 WebSocket Hibernation API，保持长时间的 SSH 稳定连接，支持 Keepalive 心跳保活。
-- **响应式界面**：美观的登录面板和状态栏，支持移动端访问。
+- **多种认证方式**：支持标准 SSH 密码认证以及基于 Ed25519 的纯文本私钥认证。
+- **防范中间人攻击 (TOFU)**：首次连接自动提取服务器 Host Key（SHA-256 指纹）并显示，防止被恶意节点窃听。
+- **全功能极客终端**：基于 `@xterm/xterm` 与 `@xterm/addon-webgl` 硬件加速渲染引擎，保证海量日志输出顺滑不卡顿。
+- **个性化 UI**：提供 Cyberpunk、Glacier、Gruvbox 等经典终端主题一键切换，支持移动端适配。
+- **原生文件传输**：集成 zmodem.js，只需在终端中执行 `rz` / `sz` 命令，即可在浏览器直接与服务器双向拖放/下载文件。
+- **智能断线重连 (Roaming)**：利用 Durable Objects 留存特性，当网络波动或切换 WiFi 造成 WebSocket 断开时，15 秒内静默重连，无需重新验证密码。
 
 <a id="architecture"></a>
 ## 架构说明
@@ -104,7 +107,7 @@ flowchart TB
 1. **Fork 本仓库** 到你的 GitHub 账号。
 2. **修改域名**：在进行部署前，请先将 `wrangler.toml` 中的自定义域名改成你自己的域名（要求：域名需要先在 Cloudflare 中完成注册或接入）。
 3. **一键部署**：登录 Cloudflare，进入 Workers & Pages 绑定你的 GitHub 账号，选择刚才 Fork 的仓库进行应用创建。
-4. **填写构建命令**：在部署设置中，请务必将“构建命令”（Build command）填写为 `cd frontend && npm install && npm run build`，然后点击保存并部署。
+4. **填写构建命令**：在部署设置中，请务必将“构建命令”（Build command）填写为 `npm install && npm run build:frontend`，然后点击保存并部署（无需填写构建输出目录）。
 
 #### 方式二：本地命令行部署
 

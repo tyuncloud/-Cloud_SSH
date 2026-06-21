@@ -50,10 +50,35 @@ export interface SSHConnectionConfig {
 
 export interface Env {
   SSH_SESSION: DurableObjectNamespace;
+  USER_DB: DurableObjectNamespace;
   MAX_CONNECTIONS?: string;
   IDLE_TIMEOUT?: string;
   TURNSTILE_SECRET?: string;
   TURNSTILE_SITEKEY?: string;
+  // GitHub OAuth（可选，未配置则登录功能自动禁用）
+  GITHUB_CLIENT_ID?: string;
+  GITHUB_CLIENT_SECRET?: string;
+  SESSION_SECRET?: string;
+  BASE_URL?: string;
+}
+
+export interface UserInfo {
+  id: number;
+  github_id: number;
+  username: string;
+  avatar_url: string;
+}
+
+export interface ServerConfig {
+  id: number;
+  user_id: number;
+  name: string;
+  host: string;
+  port: number;
+  username: string;
+  auth_method: 'password' | 'publickey';
+  created_at: string;
+  updated_at: string;
 }
 
 export const SSH_MSG_DISCONNECT = 1;

@@ -5,6 +5,14 @@ compatibility_flags = ["nodejs_compat"]
 # no_bundle = true
 workers_dev = false
 
+# GitHub OAuth（可选，不配置则登录功能自动隐藏）
+# 创建 GitHub OAuth App 后，取消下方注释并填入你的 Client ID
+# Secret 通过 CLI 设置：npx wrangler secret set GITHUB_CLIENT_SECRET
+#                       npx wrangler secret set SESSION_SECRET
+# [vars]
+# GITHUB_CLIENT_ID = "your-github-oauth-client-id"
+# BASE_URL = "https://your-domain.com"
+
 # Turnstile 验证（可选）
 # 在 Cloudflare Dashboard 中创建 Turnstile Widget 后，将密钥配置为环境变量
 # [vars]
@@ -19,6 +27,11 @@ custom_domain = true
 name = "SSH_SESSION"
 class_name = "SSHSessionDO"
 
+[[durable_objects.bindings]]
+name = "USER_DB"
+class_name = "UserDBDO"
+
+# 建议从零部署：两个 DO 合并为单个 migration tag
 [[migrations]]
 tag = "v1"
-new_sqlite_classes = ["SSHSessionDO"]
+new_sqlite_classes = ["SSHSessionDO", "UserDBDO"]

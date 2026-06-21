@@ -142,84 +142,111 @@ export class SSHTerminal {
 
       this.ws.onclose = () => {
         this.terminal.writeln('\x1b[31m[-] 连接已关闭\x1b[0m');
-        document.getElementById('status-text')!.innerHTML = '<span class="w-2 h-2 bg-[#353534] inline-block"></span> STATUS: OFFLINE';
+        const statusText = document.getElementById('status-text');
+        if (statusText) statusText.innerHTML = '<span class="w-2 h-2 bg-[#353534] inline-block"></span> STATUS: OFFLINE';
       };
 
-      // Zmodem support
-      const zmodemHandler = new ZmodemHandler(
-        (data) => this.terminal.write(data),
-        (data) => {
-          if (this.ws?.readyState === WebSocket.OPEN) {
-            this.ws.send(data);
-          }
-        }
-      );
-
-      this.ws.onmessage = (event) => {
-        if (typeof event.data === 'string') {
-          try {
-            const msg = JSON.parse(event.data);
-            switch (msg.type) {
-              case 'status':
-                this.terminal.writeln(`\x1b[32m[*] ${msg.message}\x1b[0m`);
-                if (msg.message === '认证成功') {
-                  document.getElementById('status-text')!.innerHTML = '<span class="w-2 h-2 bg-[#4af626] inline-block animate-pulse"></span> STATUS: ONLINE';
-                }
-                break;
-              case 'error':
-                this.terminal.writeln(`\x1b[31m[!] ${msg.message}\x1b[0m`);
-                break;
-            }
-          } catch {
-            this.terminal.write(event.data);
-          }
-        } else {
-          const reader = new FileReader();
-          reader.onload = () => {
-            zmodemHandler.consume(reader.result as ArrayBuffer);
-          };
-          reader.readAsArrayBuffer(event.data);
-        }
-      };
-
-      this.ws.onclose = (event) => {
-        this.stopHeartbeat();
-        this.terminal.writeln(
-          `\x1b[33m[*] Connection closed (code=${event.code})\x1b[0m`
-        );
-        document.getElementById('term-status')!.innerHTML = '<div class="w-2 h-2 bg-red-500"></div> Disconnected';
-        document.getElementById('status-text')!.innerHTML = '<span class="w-2 h-2 bg-[#353534] inline-block"></span> STATUS: OFFLINE';
-        
-        if (event.code !== 1000 && this.lastConfig && this.reconnectAttempts < this.maxReconnectAttempts) {
-          this.scheduleReconnect();
-        }
-      };
-
-      this.ws.onerror = () => {
-        this.terminal.writeln('\x1b[31m[!] Connection error\x1b[0m');
-        reject(new Error('WebSocket connection failed'));
-      };
-
-      this.disposables.push(
-        this.terminal.onData((data) => {
-          if (this.ws?.readyState === WebSocket.OPEN) {
-            this.ws.send(data);
-          }
-        })
-      );
-
-      this.disposables.push(
-        this.terminal.onResize(({ cols, rows }) => {
-          if (this.ws?.readyState === WebSocket.OPEN) {
-            this.ws.send(JSON.stringify({
-              type: 'resize',
-              cols,
-              rows,
-            }));
-          }
-        })
-      );
+      this.setupWebSocketHandlers(reject);
     });
+  }
+
+  /**
+   * 通过已创建的 WebSocket 连接（用于 one-time-token 模式）
+   * 服务器已通过 token 获取凭据，无需前端发送
+   */
+  connectWithWebSocket(ws: WebSocket): void {
+    this.lastConfig = null;
+    this.ws = ws;
+
+    ws.onopen = () => {
+      this.terminal.writeln('\x1b[32m[+] WebSocket connected, authenticating...\x1b[0m');
+      this.reconnectAttempts = 0;
+      this.startHeartbeat();
+    };
+
+    this.setupWebSocketHandlers();
+  }
+
+  private setupWebSocketHandlers(rejectFn?: (reason?: any) => void): void {
+    if (!this.ws) return;
+
+    // Zmodem support
+    const zmodemHandler = new ZmodemHandler(
+      (data) => this.terminal.write(data),
+      (data) => {
+        if (this.ws?.readyState === WebSocket.OPEN) {
+          this.ws.send(data);
+        }
+      }
+    );
+
+    this.ws.onmessage = (event) => {
+      if (typeof event.data === 'string') {
+        try {
+          const msg = JSON.parse(event.data);
+          switch (msg.type) {
+            case 'status':
+              this.terminal.writeln(`\x1b[32m[*] ${msg.message}\x1b[0m`);
+              if (msg.message === '认证成功') {
+                const statusText = document.getElementById('status-text');
+                if (statusText) statusText.innerHTML = '<span class="w-2 h-2 bg-[#4af626] inline-block animate-pulse"></span> STATUS: ONLINE';
+              }
+              break;
+            case 'error':
+              this.terminal.writeln(`\x1b[31m[!] ${msg.message}\x1b[0m`);
+              break;
+          }
+        } catch {
+          this.terminal.write(event.data);
+        }
+      } else {
+        const reader = new FileReader();
+        reader.onload = () => {
+          zmodemHandler.consume(reader.result as ArrayBuffer);
+        };
+        reader.readAsArrayBuffer(event.data);
+      }
+    };
+
+    this.ws.onclose = (event) => {
+      this.stopHeartbeat();
+      this.terminal.writeln(
+        `\x1b[33m[*] Connection closed (code=${event.code})\x1b[0m`
+      );
+      const termStatus = document.getElementById('term-status');
+      if (termStatus) termStatus.innerHTML = '<div class="w-2 h-2 bg-red-500"></div> Disconnected';
+      const statusText = document.getElementById('status-text');
+      if (statusText) statusText.innerHTML = '<span class="w-2 h-2 bg-[#353534] inline-block"></span> STATUS: OFFLINE';
+      
+      if (event.code !== 1000 && this.lastConfig && this.reconnectAttempts < this.maxReconnectAttempts) {
+        this.scheduleReconnect();
+      }
+    };
+
+    this.ws.onerror = () => {
+      this.terminal.writeln('\x1b[31m[!] Connection error\x1b[0m');
+      if (rejectFn) rejectFn(new Error('WebSocket connection failed'));
+    };
+
+    this.disposables.push(
+      this.terminal.onData((data) => {
+        if (this.ws?.readyState === WebSocket.OPEN) {
+          this.ws.send(data);
+        }
+      })
+    );
+
+    this.disposables.push(
+      this.terminal.onResize(({ cols, rows }) => {
+        if (this.ws?.readyState === WebSocket.OPEN) {
+          this.ws.send(JSON.stringify({
+            type: 'resize',
+            cols,
+            rows,
+          }));
+        }
+      })
+    );
   }
 
   fit(): void {

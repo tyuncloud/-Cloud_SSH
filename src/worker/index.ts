@@ -1,7 +1,15 @@
 import { Env } from '../types';
 import { HTML } from './html';
+import {
+  handleGitHubAuth,
+  handleGitHubCallback,
+  handleLogout,
+  handleGetMe,
+  getAuthenticatedUser,
+} from './auth';
 
 export { SSHSessionDO } from './durable-object';
+export { UserDBDO } from './user-db';
 
 // --- Rate Limiting (per-edge-node, best-effort) ---
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -66,11 +74,42 @@ function isVerifiedTokenValid(token: string, secret: string): boolean {
   }
 }
 
+// --- UserDBDO helper ---
+function getUserDBStub(env: Env): DurableObjectStub {
+  const id = env.USER_DB.idFromName('global');
+  return env.USER_DB.get(id);
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
-    // Verify Turnstile token and issue verification cookie
+    // ==================== Auth Routes ====================
+
+    if (url.pathname === '/api/auth/github') {
+      return handleGitHubAuth(request, env);
+    }
+
+    if (url.pathname === '/api/auth/callback') {
+      return handleGitHubCallback(request, env);
+    }
+
+    if (url.pathname === '/api/auth/logout' && request.method === 'POST') {
+      return handleLogout(request, env);
+    }
+
+    if (url.pathname === '/api/auth/me') {
+      return handleGetMe(request, env);
+    }
+
+    // ==================== Servers Routes (需认证) ====================
+
+    if (url.pathname === '/api/servers' || url.pathname.startsWith('/api/servers/')) {
+      return handleServersRoute(request, url, env);
+    }
+
+    // ==================== Turnstile Verify ====================
+
     if (url.pathname === '/api/verify' && request.method === 'POST') {
       if (!env.TURNSTILE_SECRET) {
         return Response.json({ success: true });
@@ -98,11 +137,19 @@ export default {
       });
     }
 
+    // ==================== SSH WebSocket ====================
+
     if (url.pathname === '/api/ssh') {
       // Apply rate limiting
       const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
       if (isRateLimited(clientIP)) {
         return new Response('Too Many Requests', { status: 429 });
+      }
+
+      // Check for one-time-token (from server management connect)
+      const connectToken = url.searchParams.get('token');
+      if (connectToken) {
+        return handleTokenSSHConnection(request, env, connectToken);
       }
 
       // Verify Turnstile if secret is configured
@@ -132,11 +179,12 @@ export default {
       return Response.json({ status: 'ok', timestamp: Date.now() });
     }
 
-    // Return config info
+    // Return config info (includes GitHub auth availability)
     if (url.pathname === '/api/config') {
       return Response.json({
         turnstileEnabled: !!env.TURNSTILE_SECRET,
         sitekey: env.TURNSTILE_SITEKEY || '',
+        githubAuthEnabled: !!env.GITHUB_CLIENT_ID,
       });
     }
 
@@ -151,6 +199,85 @@ export default {
     });
   },
 };
+
+// ==================== Server management routes ====================
+
+async function handleServersRoute(request: Request, url: URL, env: Env): Promise<Response> {
+  // 认证检查
+  const user = await getAuthenticatedUser(request, env);
+  if (!user) {
+    return Response.json({ error: 'Authentication required' }, { status: 401 });
+  }
+
+  const stub = getUserDBStub(env);
+
+  // GET /api/servers
+  if (url.pathname === '/api/servers' && request.method === 'GET') {
+    return stub.fetch(new Request(`http://internal/internal/servers?user_id=${user.id}`, {
+      method: 'GET',
+    }));
+  }
+
+  // POST /api/servers
+  if (url.pathname === '/api/servers' && request.method === 'POST') {
+    const body = await request.json<any>();
+    body.user_id = user.id;
+    return stub.fetch(new Request('http://internal/internal/servers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }));
+  }
+
+  // /api/servers/:id/connect
+  const connectMatch = url.pathname.match(/^\/api\/servers\/(\d+)\/connect$/);
+  if (connectMatch && request.method === 'POST') {
+    const serverId = connectMatch[1];
+    const tokenRes = await stub.fetch(new Request(`http://internal/internal/servers/${serverId}/connect`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user.id }),
+    }));
+
+    if (!tokenRes.ok) return tokenRes;
+
+    const { token } = await tokenRes.json<{ token: string }>();
+    const wsProtocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${wsProtocol}//${url.host}/api/ssh?token=${token}`;
+
+    return Response.json({ wsUrl });
+  }
+
+  // /api/servers/:id
+  const serverMatch = url.pathname.match(/^\/api\/servers\/(\d+)$/);
+  if (serverMatch) {
+    const serverId = serverMatch[1];
+
+    // PUT /api/servers/:id
+    if (request.method === 'PUT') {
+      const body = await request.json<any>();
+      body.user_id = user.id;
+      return stub.fetch(new Request(`http://internal/internal/servers/${serverId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }));
+    }
+
+    // DELETE /api/servers/:id
+    if (request.method === 'DELETE') {
+      return stub.fetch(new Request(`http://internal/internal/servers/${serverId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id }),
+      }));
+    }
+  }
+
+  return Response.json({ error: 'Not Found' }, { status: 404 });
+}
+
+// ==================== SSH connection handlers ====================
 
 async function handleSSHConnection(request: Request, env: Env): Promise<Response> {
   const upgradeHeader = request.headers.get('Upgrade');
@@ -174,4 +301,55 @@ async function handleSSHConnection(request: Request, env: Env): Promise<Response
   const stub = env.SSH_SESSION.get(doId);
 
   return stub.fetch(request);
+}
+
+/**
+ * 处理通过 one-time-token 发起的 SSH 连接
+ * 流程：从 UserDBDO 消费 token 获取凭据 → 传给 SSHSessionDO
+ */
+async function handleTokenSSHConnection(request: Request, env: Env, token: string): Promise<Response> {
+  const upgradeHeader = request.headers.get('Upgrade');
+  if (upgradeHeader !== 'websocket') {
+    return Response.json({ error: 'Expected WebSocket upgrade' }, { status: 426 });
+  }
+
+  // Prevent Cross-Site WebSocket Hijacking
+  const origin = request.headers.get('Origin');
+  if (origin) {
+    const url = new URL(request.url);
+    if (origin !== url.origin) {
+      return new Response('Forbidden', { status: 403 });
+    }
+  }
+
+  // 从 UserDBDO 消费 token，获取连接配置
+  const stub = getUserDBStub(env);
+  const tokenRes = await stub.fetch(new Request('http://internal/internal/connect-token/consume', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  }));
+
+  if (!tokenRes.ok) {
+    return Response.json({ error: 'Invalid or expired connection token' }, { status: 403 });
+  }
+
+  const config = await tokenRes.json<any>();
+
+  // 将凭据编码后通过 URL 参数传给 SSHSessionDO（内部通信，不经过前端）
+  const configBase64 = btoa(JSON.stringify(config));
+
+  const doId = env.SSH_SESSION.idFromName(`session:${Date.now()}:${Math.random()}`);
+  const doStub = env.SSH_SESSION.get(doId);
+
+  // 构建新的请求 URL，附加预填充配置
+  const doUrl = new URL(request.url);
+  doUrl.searchParams.delete('token');
+  doUrl.searchParams.set('config', configBase64);
+
+  const doRequest = new Request(doUrl.toString(), {
+    headers: request.headers,
+  });
+
+  return doStub.fetch(doRequest);
 }

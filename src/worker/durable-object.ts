@@ -50,24 +50,53 @@ export class SSHSessionDO {
       return new Response('Expected WebSocket', { status: 400 });
     }
 
+    // 检查是否有预填充配置（来自 one-time-token 连接）
+    const url = new URL(request.url);
+    const configParam = url.searchParams.get('config');
+    let prefilledConfig: SSHConnectionConfig | null = null;
+
+    if (configParam) {
+      try {
+        prefilledConfig = JSON.parse(atob(configParam)) as SSHConnectionConfig;
+      } catch {
+        return new Response('Invalid config parameter', { status: 400 });
+      }
+    }
+
     const pair = new WebSocketPair();
     const [client, server] = [pair[0], pair[1]];
 
     // Use Hibernation API for long-lived WebSocket connections
     this.state.acceptWebSocket(server);
 
-    // Set a timeout for receiving credentials
-    const timeout = setTimeout(() => {
-      try {
-        server.send(JSON.stringify({ type: 'error', message: 'Connection timeout' }));
-        server.close(1011, 'Timeout');
-      } catch {}
-    }, 10000);
+    if (prefilledConfig) {
+      // 预填充模式：直接发起 SSH 连接，不等待前端凭据
+      server.serializeAttachment({ state: 'prefilled' });
+      // 使用 queueMicrotask 确保 WebSocket 就绪后再连接
+      queueMicrotask(async () => {
+        try {
+          await this.initSSHSession(server, prefilledConfig!);
+        } catch (e) {
+          const errMsg = e instanceof Error ? e.message : String(e);
+          try {
+            server.send(JSON.stringify({ type: 'error', message: `连接失败: ${errMsg}` }));
+            server.close(1011, 'SSH connection failed');
+          } catch {}
+        }
+      });
+    } else {
+      // 匿名模式：等待前端发送凭据
+      // Set a timeout for receiving credentials
+      const timeout = setTimeout(() => {
+        try {
+          server.send(JSON.stringify({ type: 'error', message: 'Connection timeout' }));
+          server.close(1011, 'Timeout');
+        } catch {}
+      }, 10000);
 
-    // Store timeout ID so we can clear it when credentials arrive
-    server.serializeAttachment({ state: 'waiting', timeout: null });
-    // Note: we can't serialize setTimeout, so we store it in a map
-    this._pendingTimeouts.set(server, timeout);
+      server.serializeAttachment({ state: 'waiting', timeout: null });
+      this._pendingTimeouts.set(server, timeout);
+    }
 
     return new Response(null, {
       status: 101,

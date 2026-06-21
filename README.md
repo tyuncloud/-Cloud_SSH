@@ -150,6 +150,38 @@ flowchart TB
 
 > **说明**：Turnstile 验证为会话级别，用户通过验证后当前会话内所有功能可用，关闭浏览器后需重新验证。
 
+#### 可选：配置 GitHub OAuth 登录与服务器管理
+
+启用 GitHub 登录后，用户可以通过 GitHub 账号登录，并在个人空间中保存和管理常用的 SSH 服务器，实现一键连接。不配置时，此功能自动隐藏，不影响匿名 SSH 连接的正常使用。
+
+1. **创建 GitHub OAuth App**：
+   - 登录 GitHub → Settings → Developer settings → OAuth Apps → [New OAuth App](https://github.com/settings/applications/new)
+   - **Application name**：`CloudSSH`（自定义）
+   - **Homepage URL**：`https://your-domain.com`（你的部署域名）
+   - **Authorization callback URL**：`https://your-domain.com/api/auth/callback`
+   - 创建后获得 **Client ID**，点击 **Generate a new client secret** 生成 **Client Secret**（仅显示一次，请立即保存）
+
+2. **配置环境变量**：
+   - **方式一部署**：在 Cloudflare Dashboard 的 Workers 设置中，添加以下环境变量：
+     - `GITHUB_CLIENT_ID` = 你的 Client ID
+     - `BASE_URL` = `https://your-domain.com`（你的部署域名）
+   - **方式二部署**：取消 `wrangler.toml` 中 `GITHUB_CLIENT_ID` 和 `BASE_URL` 的注释，填入对应值。
+
+3. **设置 Secrets**（敏感信息，不写入代码仓库）：
+   ```bash
+   npx wrangler secret set GITHUB_CLIENT_SECRET
+   # 粘贴你的 Client Secret
+
+   npx wrangler secret set SESSION_SECRET
+   # 输入一个随机字符串，可通过以下命令生成：openssl rand -hex 32
+   ```
+
+4. **重新部署**：运行部署命令使配置生效。
+
+> **说明**：服务器凭据（密码/私钥）在数据库中使用 AES-256-GCM 加密存储，且连接时凭据不经过前端，通过 one-time-token 机制安全传递。
+
+> **注意**：首次启用此功能需要从零部署（删除旧 Worker 后重新部署），因为需要初始化新的 Durable Object。可通过 `npx wrangler delete cloudssh` 删除旧 Worker，然后运行 `npm run deploy` 重新部署。
+
 <a id="development"></a>
 ## 开发说明
 
@@ -166,7 +198,7 @@ npm run dev
 <a id="license"></a>
 ## 开源协议
 
-本项目基于 [MIT License](LICENSE) 协议开源。
+本项目基于 [Apache License 2.0](LICENSE) 协议开源。
 
 **特别声明**：本项目允许商业使用及二次修改，但必须明确注明原作者。
 

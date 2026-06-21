@@ -102,3 +102,68 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(134, 149, 125, 0.8);
 }
+
+/* ==================== User Space Styles ==================== */
+
+/* 服务器卡片 */
+.server-card {
+  background-color: #121212;
+  border: 1px solid #1f1f1f;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.server-card:hover {
+  border-color: #4af626;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(74, 246, 38, 0.08);
+}
+
+/* 卡片删除动画 */
+.server-card.removing {
+  animation: fadeOut 0.3s ease forwards;
+}
+
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+/* Modal 遮罩 */
+.modal-overlay {
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+}
+
+/* 用户头像 */
+.user-avatar {
+  border: 2px solid #4af626;
+  border-radius: 50%;
+  transition: border-color 0.2s;
+}
+
+.user-avatar:hover {
+  border-color: #14d1ff;
+}
+
+/* GitHub 登录按钮 */
+.github-login-btn {
+  transition: all 0.2s ease;
+}
+
+.github-login-btn:hover {
+  border-color: #4af626;
+  color: #4af626;
+}
+
+/* 旋转动画 */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

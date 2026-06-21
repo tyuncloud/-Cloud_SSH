@@ -150,6 +150,38 @@ To prevent malicious bot abuse, it is recommended to enable Cloudflare Turnstile
 
 > **Note**: Turnstile verification is session-level. After verification, all features are available for the current session. Closing the browser will require re-verification.
 
+#### Optional: Configure GitHub OAuth Login & Server Management
+
+With GitHub OAuth enabled, users can log in with their GitHub account and save/manage their frequently used SSH servers in a personal dashboard for one-click connections. When not configured, this feature is automatically hidden and does not affect the anonymous SSH connection functionality.
+
+1. **Create a GitHub OAuth App**:
+   - Go to GitHub → Settings → Developer settings → OAuth Apps → [New OAuth App](https://github.com/settings/applications/new)
+   - **Application name**: `CloudSSH` (customizable)
+   - **Homepage URL**: `https://your-domain.com` (your deployed domain)
+   - **Authorization callback URL**: `https://your-domain.com/api/auth/callback`
+   - After creation, note the **Client ID**, then click **Generate a new client secret** to get the **Client Secret** (shown only once, save it immediately)
+
+2. **Configure Environment Variables**:
+   - **Method 1 (GitHub)**: In the Cloudflare Dashboard Workers settings, add:
+     - `GITHUB_CLIENT_ID` = your Client ID
+     - `BASE_URL` = `https://your-domain.com` (your deployed domain)
+   - **Method 2 (CLI)**: Uncomment `GITHUB_CLIENT_ID` and `BASE_URL` in `wrangler.toml` and enter your values.
+
+3. **Set Secrets** (sensitive info, never committed to the repository):
+   ```bash
+   npx wrangler secret set GITHUB_CLIENT_SECRET
+   # Paste your Client Secret
+
+   npx wrangler secret set SESSION_SECRET
+   # Enter a random string, generate one with: openssl rand -hex 32
+   ```
+
+4. **Redeploy**: Run the deployment command to apply the configuration.
+
+> **Note**: Server credentials (passwords/private keys) are encrypted with AES-256-GCM before storage. During connection, credentials never pass through the frontend — they are securely transmitted via a one-time-token mechanism.
+
+> **Important**: Enabling this feature for the first time requires a clean deployment (delete the old Worker first, then redeploy) to initialize the new Durable Object. Use `npx wrangler delete cloudssh` to remove the old Worker, then run `npm run deploy` to redeploy.
+
 <a id="development"></a>
 ## Development
 
@@ -166,7 +198,7 @@ This command starts Wrangler's local development environment server.
 <a id="license"></a>
 ## License
 
-This project is open-sourced under the [MIT License](LICENSE). 
+This project is open-sourced under the [Apache License 2.0](LICENSE). 
 
 **Special Notice**: Commercial use and modifications are permitted, but you must clearly attribute the original author.
 

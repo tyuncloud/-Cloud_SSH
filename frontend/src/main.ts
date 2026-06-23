@@ -9,6 +9,43 @@ let connectionForm: ConnectionForm | null = null;
 let serverList: ServerList | null = null;
 let isLoggedIn = false;
 
+// ==================== 独立终端标签页模式 ====================
+
+function isTerminalTab(): boolean {
+  const params = new URLSearchParams(window.location.search);
+  return params.has('wsUrl');
+}
+
+function initTerminalTab(): void {
+  const params = new URLSearchParams(window.location.search);
+  const wsUrl = params.get('wsUrl')!;
+  const serverName = params.get('name') || 'Server';
+
+  // 隐藏所有非终端元素
+  document.getElementById('auth-section')!.classList.add('hidden');
+  document.getElementById('user-space-section')!.classList.add('hidden');
+  document.getElementById('user-space-section')!.classList.remove('flex');
+  document.getElementById('terminal-section')!.classList.remove('hidden');
+  document.getElementById('terminal-section')!.classList.add('flex');
+
+  // 更新终端状态栏
+  document.getElementById('term-host')!.textContent = `Server: ${serverName}`;
+  document.getElementById('term-user')!.textContent = '';
+  document.getElementById('term-port')!.textContent = '';
+
+  terminal.mount();
+
+  const ws = new WebSocket(wsUrl);
+  ws.binaryType = 'arraybuffer';
+  terminal.connectWithWebSocket(ws);
+
+  // 断开连接时关闭标签页
+  document.getElementById('disconnect-btn')?.addEventListener('click', () => {
+    terminal.disconnect();
+    window.close();
+  });
+}
+
 // ==================== 页面切换 ====================
 
 function showAuthSection(): void {
@@ -35,10 +72,6 @@ function showUserSpace(user: { id: number; github_id: number; username: string; 
 
   serverList = new ServerList(
     user,
-    // onConnect 回调
-    (wsUrl: string, serverName: string) => {
-      showTerminalFromServer(wsUrl, serverName);
-    },
     // onLogout 回调
     () => {
       isLoggedIn = false;
@@ -64,6 +97,7 @@ function showTerminalFromServer(wsUrl: string, serverName: string): void {
 
   // 通过 wsUrl（含 one-time-token）建立连接
   const ws = new WebSocket(wsUrl);
+  ws.binaryType = 'arraybuffer';
   terminal.connectWithWebSocket(ws);
 }
 
@@ -101,6 +135,12 @@ async function init(): Promise<void> {
   const copyrightYearSpan = document.getElementById('copyright-year');
   if (copyrightYearSpan) {
     copyrightYearSpan.textContent = new Date().getFullYear().toString();
+  }
+
+  // 独立终端标签页模式：URL 包含 wsUrl 参数
+  if (isTerminalTab()) {
+    initTerminalTab();
+    return;
   }
 
   try {

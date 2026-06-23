@@ -977,10 +977,10 @@ export class SSHSession {
   }
 
   private sendDebug(message: string): void {
-    // console.log('[DEBUG] ' + message);
-    // try {
-    //   this.ws.send(JSON.stringify({ type: 'status', message: '[DEBUG] ' + message }));
-    // } catch {}
+    console.log('[DEBUG] ' + message);
+    try {
+      this.ws.send(JSON.stringify({ type: 'status', message: '[DEBUG] ' + message }));
+    } catch {}
   }
 
   close(normal: boolean = false): void {

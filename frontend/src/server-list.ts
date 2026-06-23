@@ -1,5 +1,3 @@
-import { SSHTerminal } from './terminal';
-
 interface UserInfo {
   id: number;
   github_id: number;
@@ -25,18 +23,15 @@ interface ServerConfig {
 export class ServerList {
   private user: UserInfo;
   private servers: ServerConfig[] = [];
-  private onConnect: (wsUrl: string, serverName: string) => void;
   private onLogout: () => void;
   private editingServerId: number | null = null;
   private modalAuthMode: 'password' | 'key' = 'password';
 
   constructor(
     user: UserInfo,
-    onConnect: (wsUrl: string, serverName: string) => void,
     onLogout: () => void
   ) {
     this.user = user;
-    this.onConnect = onConnect;
     this.onLogout = onLogout;
     this.init();
   }
@@ -209,9 +204,12 @@ export class ServerList {
       }
 
       const { wsUrl } = await res.json() as { wsUrl: string };
-      this.onConnect(wsUrl, server.name);
 
-      // 连接成功跳转终端后，立即恢复按钮的原始状态，以便用户断开连接返回后看到的是正常按钮
+      // 在新标签页打开终端
+      const terminalUrl = `/?wsUrl=${encodeURIComponent(wsUrl)}&name=${encodeURIComponent(server.name)}`;
+      window.open(terminalUrl, '_blank');
+
+      // 恢复按钮状态
       if (connectBtn) {
         connectBtn.innerHTML = `
           <span class="material-symbols-outlined" style="font-size: 14px;">power_settings_new</span>

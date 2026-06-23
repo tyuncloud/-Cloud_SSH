@@ -141,6 +141,7 @@ export class SSHTerminal {
 
     return new Promise((resolve, reject) => {
       this.ws = new WebSocket(wsUrl.toString());
+      this.ws.binaryType = 'arraybuffer';
 
       this.ws.onopen = () => {
         this.terminal.writeln('\x1b[32m[+] WebSocket connected, sending credentials...\x1b[0m');
@@ -179,6 +180,7 @@ export class SSHTerminal {
     this.resetActiveConnection();
     this.lastConfig = null;
     this.ws = ws;
+    ws.binaryType = 'arraybuffer';
     this.terminal.clear();
 
     const termStatus = document.getElementById('term-status');
@@ -204,8 +206,9 @@ export class SSHTerminal {
           this.terminal.write(data);
         } else if (data instanceof ArrayBuffer) {
           this.terminal.write(new Uint8Array(data));
+        } else if (data instanceof Blob) {
+          data.arrayBuffer().then(buf => this.terminal.write(new Uint8Array(buf)));
         }
-        // Blob is not expected in practice for terminal output
       },
       sendToServer: (data: string | Uint8Array) => {
         if (this.ws?.readyState === WebSocket.OPEN) {

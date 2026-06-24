@@ -35,7 +35,6 @@ new_sqlite_classes = ["SSHSessionDO", "UserDBDO"]
 # 自定义域名请在 Cloudflare Dashboard 中手动绑定
 [env.test]
 name = "cloudssh-test"
-workers_dev = true
 
 [env.test.vars]
 DEBUG_MODE = "true"

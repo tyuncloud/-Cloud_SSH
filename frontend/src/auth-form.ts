@@ -720,10 +720,8 @@ fileInput?.addEventListener(
     if (!file) return;
 
 
-
     const text =
       await file.text();
-
 
 
     const keyArea =
@@ -732,9 +730,7 @@ fileInput?.addEventListener(
       ) as HTMLTextAreaElement;
 
 
-
     keyArea.value = text;
-
 
 
     if (fileName) {
@@ -745,15 +741,17 @@ fileInput?.addEventListener(
     }
 
 
-
     fileInput.value = '';
 
   }
 
 );
-      
- 
-  private authMode: 'password' | 'key' = 'password';
+
+
+// render结束
+}
+
+private authMode: 'password' | 'key' = 'password';
 
   private setAuthMode(mode: 'password' | 'key'): void {
     this.authMode = mode;

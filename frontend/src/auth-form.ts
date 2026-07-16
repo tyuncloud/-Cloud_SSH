@@ -1,14 +1,34 @@
 import { loadKnownFingerprint } from './terminal';
 import type { TabManager } from './tab-manager';
-import { populateRegionSelect, regionLabel } from './regions';
-// --- Credential encryption helpers ---
+import { populateRegionSelect } from './regions';
+
+// ==================== Credential Encryption ====================
+
 async function deriveKey(salt: Uint8Array): Promise<CryptoKey> {
-  const raw = new TextEncoder().encode(window.location.origin + ':cloudssh');
-  const baseKey = await crypto.subtle.importKey('raw', raw, 'PBKDF2', false, ['deriveKey']);
+  const raw = new TextEncoder().encode(
+    `${window.location.origin}:cloudssh`
+  );
+
+  const baseKey = await crypto.subtle.importKey(
+    'raw',
+    raw,
+    'PBKDF2',
+    false,
+    ['deriveKey']
+  );
+
   return crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt: salt as any, iterations: 100000, hash: 'SHA-256' },
+    {
+      name: 'PBKDF2',
+      salt: salt as BufferSource,
+      iterations: 100000,
+      hash: 'SHA-256',
+    },
     baseKey,
-    { name: 'AES-GCM', length: 256 },
+    {
+      name: 'AES-GCM',
+      length: 256,
+    },
     false,
     ['encrypt', 'decrypt']
   );
@@ -18,288 +38,732 @@ async function encryptCredentials(data: object): Promise<string> {
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveKey(salt);
+
   const encoded = new TextEncoder().encode(JSON.stringify(data));
-  const encrypted = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded));
-  const combined = new Uint8Array(salt.length + iv.length + encrypted.length);
+
+  const encrypted = new Uint8Array(
+    await crypto.subtle.encrypt(
+      {
+        name: 'AES-GCM',
+        iv,
+      },
+      key,
+      encoded
+    )
+  );
+
+  const combined = new Uint8Array(
+    salt.length + iv.length + encrypted.length
+  );
+
   combined.set(salt, 0);
   combined.set(iv, salt.length);
   combined.set(encrypted, salt.length + iv.length);
+
   let binary = '';
-  for (let i = 0; i < combined.length; i++) binary += String.fromCharCode(combined[i]);
+
+  for (let index = 0; index < combined.length; index += 1) {
+    binary += String.fromCharCode(combined[index]);
+  }
+
   return btoa(binary);
 }
 
-async function decryptCredentials(stored: string): Promise<{ host: string; port: string; username: string; password: string; privateKey?: string; authMethod?: string } | null> {
+interface StoredCredentials {
+  host: string;
+  port: string;
+  username: string;
+  password: string;
+  privateKey?: string;
+  authMethod?: string;
+}
+
+async function decryptCredentials(
+  stored: string
+): Promise<StoredCredentials | null> {
   try {
-    const raw = Uint8Array.from(atob(stored), c => c.charCodeAt(0));
+    const raw = Uint8Array.from(
+      atob(stored),
+      character => character.charCodeAt(0)
+    );
+
     const salt = raw.slice(0, 16);
     const iv = raw.slice(16, 28);
     const data = raw.slice(28);
     const key = await deriveKey(salt);
-    const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, data);
-    return JSON.parse(new TextDecoder().decode(decrypted));
+
+    const decrypted = await crypto.subtle.decrypt(
+      {
+        name: 'AES-GCM',
+        iv,
+      },
+      key,
+      data
+    );
+
+    return JSON.parse(
+      new TextDecoder().decode(decrypted)
+    ) as StoredCredentials;
   } catch {
     return null;
   }
 }
 
+// ==================== Types ====================
+
 export interface ConnectionFormOptions {
-  /** 获取 TabManager 实例 */
   getTabManager: () => TabManager;
 }
 
+interface RecentConnection {
+  id: string;
+  host: string;
+  port: number;
+  username: string;
+  authMethod: 'password' | 'publickey';
+  timestamp: number;
+  encryptedCred?: string;
+  region?: string;
+}
+
+// ==================== Connection Form ====================
+
 export class ConnectionForm {
   private options: ConnectionFormOptions;
+
   private turnstileEnabled = false;
+
   private turnstileVerified = false;
+
   private turnstileWidgetId: string | null = null;
+
   private turnstileSitekey = '';
+
+  private authMode: 'password' | 'key' = 'password';
 
   constructor(options: ConnectionFormOptions) {
     this.options = options;
+
     this.render();
     this.loadSavedCredentials();
     this.checkTurnstileConfig();
   }
 
+  // ==================== Configuration ====================
+
   private async checkTurnstileConfig(): Promise<void> {
     try {
       const response = await fetch('/api/config');
+
       const config = (await response.json()) as {
         turnstileEnabled: boolean;
         sitekey: string;
         githubAuthEnabled: boolean;
       };
+
       this.turnstileEnabled = config.turnstileEnabled;
       this.turnstileSitekey = config.sitekey;
+
       if (this.turnstileEnabled && this.turnstileSitekey) {
         this.renderTurnstile();
       }
-      // 渲染 GitHub 登录按钮（仅当 OAuth 已配置时）
+
       if (config.githubAuthEnabled) {
         this.renderGitHubLoginButton();
       }
     } catch {
-      // Config endpoint not available, skip Turnstile
+      // 配置接口不可用时，保持匿名 SSH 连接模式。
     }
   }
 
+  // ==================== GitHub Login ====================
+
   private renderGitHubLoginButton(): void {
-    const placeholder = document.getElementById('github-login-placeholder');
-    if (!placeholder) return;
+    const placeholder = document.getElementById(
+      'github-login-placeholder'
+    );
+
+    if (!placeholder) {
+      return;
+    }
 
     placeholder.innerHTML = `
-      <button type="button" id="github-login-btn" class="github-login-btn text-[11px] font-bold tracking-[0.1em] text-muted hover:text-primary transition-all cursor-pointer flex items-center gap-1.5 bg-transparent border border-dim px-3 py-1 hover:border-[var(--accent)]">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-        LOGIN
+      <button
+        type="button"
+        id="github-login-btn"
+        class="tyun-github-btn github-login-btn"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+        </svg>
+
+        <span>GitHub 登录</span>
       </button>
     `;
 
-    document.getElementById('github-login-btn')?.addEventListener('click', () => {
-      window.location.href = '/api/auth/github';
-    });
+    document
+      .getElementById('github-login-btn')
+      ?.addEventListener('click', () => {
+        window.location.href = '/api/auth/github';
+      });
   }
+
+  // ==================== Turnstile ====================
 
   private renderTurnstile(): void {
-    const container = document.getElementById('turnstile-widget');
-    if (!container || !window.turnstile) return;
+    const container = document.getElementById(
+      'turnstile-widget'
+    );
 
-    const wrapper = document.getElementById('turnstile-container');
-    if (wrapper) wrapper.style.display = 'block';
+    if (!container || !window.turnstile) {
+      return;
+    }
 
-    this.turnstileWidgetId = window.turnstile.render(container, {
-      sitekey: this.turnstileSitekey,
-      theme: 'dark',
-      callback: async (token: string) => {
-        // Verify with backend and get cookie
-        try {
-          const response = await fetch('/api/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token }),
-          });
-          const result = (await response.json()) as { success: boolean };
-          if (result.success) {
-            this.turnstileVerified = true;
-            // Hide Turnstile widget after successful verification
-            const wrapper = document.getElementById('turnstile-container');
-            if (wrapper) wrapper.style.display = 'none';
+    const wrapper = document.getElementById(
+      'turnstile-container'
+    );
+
+    if (wrapper) {
+      wrapper.style.display = 'block';
+    }
+
+    this.turnstileWidgetId = window.turnstile.render(
+      container,
+      {
+        sitekey: this.turnstileSitekey,
+        theme: 'light',
+
+        callback: async (token: string) => {
+          try {
+            const response = await fetch('/api/verify', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ token }),
+            });
+
+            const result = (await response.json()) as {
+              success: boolean;
+            };
+
+            if (result.success) {
+              this.turnstileVerified = true;
+
+              if (wrapper) {
+                wrapper.style.display = 'none';
+              }
+            }
+          } catch {
+            this.turnstileVerified = false;
           }
-        } catch {
+        },
+
+        'expired-callback': () => {
           this.turnstileVerified = false;
-        }
-      },
-      'expired-callback': () => {
-        this.turnstileVerified = false;
-      },
-      'error-callback': () => {
-        this.turnstileVerified = false;
-      },
-    });
+        },
+
+        'error-callback': () => {
+          this.turnstileVerified = false;
+        },
+      }
+    );
   }
 
+  // ==================== UI Rendering ====================
+
   private render(): void {
-    const container = document.getElementById('connection-form-container')!;
+    const container = document.getElementById(
+      'connection-form-container'
+    );
+
+    if (!container) {
+      throw new Error(
+        'Connection form container was not found.'
+      );
+    }
 
     container.innerHTML = `
-      <form class="space-y-6" id="connection-form">
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div class="sm:col-span-3">
-            <label class="block text-xs font-bold tracking-[0.1em] text-muted mb-2">HOST_ADDRESS</label>
-            <div class="flex items-center">
-              <span class="text-muted mr-2">&gt;</span>
-               <input id="host" class="terminal-input text-[13px]" placeholder="192.168.1.1 or 2001:db8::1" type="text" required>
+      <form
+        id="connection-form"
+        class="tyun-login-form"
+        autocomplete="on"
+      >
+        <section class="tyun-brand">
+          <img
+            src="/logo.png"
+            alt="唐云 Cloud"
+            class="tyun-logo"
+          >
+
+          <div class="tyun-brand-copy">
+            <h1>唐云 CloudSSH</h1>
+            <p>安全、稳定、便捷的 Web SSH 远程终端</p>
+          </div>
+        </section>
+
+        <section class="tyun-card">
+          <header class="tyun-card-header">
+            <div>
+              <span class="tyun-eyebrow">REMOTE TERMINAL</span>
+              <h2>连接 SSH 服务器</h2>
+              <p>请输入服务器信息以创建安全远程会话。</p>
             </div>
-          </div>
-          <div class="sm:col-span-1">
-            <label class="block text-xs font-bold tracking-[0.1em] text-muted mb-2">PORT</label>
-            <div class="flex items-center">
-              <span class="text-muted mr-2">:</span>
-              <input id="port" class="terminal-input text-[13px]" placeholder="22" type="text" value="22">
+
+            <span class="tyun-security-badge">
+              <span class="material-symbols-outlined">shield_lock</span>
+              安全连接
+            </span>
+          </header>
+
+          <div class="tyun-form-body">
+            <div class="tyun-host-grid">
+              <div class="tyun-field tyun-host-field">
+                <label for="host">
+                  服务器地址
+                  <span>HOST</span>
+                </label>
+
+                <div class="tyun-input-box">
+                  <span class="material-symbols-outlined">
+                    dns
+                  </span>
+
+                  <input
+                    id="host"
+                    class="tyun-input"
+                    placeholder="例如：192.168.1.10"
+                    type="text"
+                    autocomplete="hostname"
+                    spellcheck="false"
+                    required
+                  >
+                </div>
+              </div>
+
+              <div class="tyun-field tyun-port-field">
+                <label for="port">
+                  SSH 端口
+                  <span>PORT</span>
+                </label>
+
+                <div class="tyun-input-box">
+                  <span class="material-symbols-outlined">
+                    numbers
+                  </span>
+
+                  <input
+                    id="port"
+                    class="tyun-input"
+                    placeholder="22"
+                    type="number"
+                    value="22"
+                    min="1"
+                    max="65535"
+                    inputmode="numeric"
+                  >
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-        <div>
-          <label class="block text-xs font-bold tracking-[0.1em] text-muted mb-2">AUTH_USER</label>
-          <div class="flex items-center">
-            <span class="material-symbols-outlined text-muted mr-2" style="font-size: 16px;">person</span>
-            <input id="username" class="terminal-input text-[13px]" placeholder="admin" type="text" required>
-          </div>
-        </div>
-        <div>
-          <label class="block text-xs font-bold tracking-[0.1em] text-muted mb-2">AUTH_METHOD</label>
-          <div class="flex gap-2 mb-3">
-            <button type="button" id="auth-tab-password" class="auth-tab auth-tab-active px-3 py-1 text-[11px] font-bold tracking-[0.1em] cursor-pointer transition-all">PASSWORD</button>
-            <button type="button" id="auth-tab-key" class="auth-tab px-3 py-1 text-[11px] font-bold tracking-[0.1em] cursor-pointer transition-all">PRIVATE_KEY</button>
-          </div>
-          <div id="auth-password-section">
-            <div class="flex items-center">
-              <span class="material-symbols-outlined text-muted mr-2" style="font-size: 16px;">key</span>
-              <input id="password" class="terminal-input text-[13px]" placeholder="••••••••" type="password">
-            </div>
-          </div>
-          <div id="auth-key-section" style="display:none;">
-            <textarea id="private-key" class="terminal-input text-[11px] w-full" rows="5" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;...粘贴 Ed25519/RSA/ECDSA 私钥内容...&#10;-----END OPENSSH PRIVATE KEY-----" style="resize:vertical;border:1px solid var(--border-strong);padding:8px;"></textarea>
-            <div class="flex items-center gap-2 mt-2">
-              <label for="private-key-file" class="text-[11px] text-muted hover:text-primary cursor-pointer flex items-center gap-1 border border-dim px-2 py-1 hover:border-[var(--accent)] transition-all">
-                <span class="material-symbols-outlined" style="font-size: 14px;">upload_file</span>
-                选择密钥文件
+
+            <div class="tyun-field">
+              <label for="username">
+                登录用户名
+                <span>USERNAME</span>
               </label>
-              <input type="file" id="private-key-file" accept=".pem,.key,.txt,.pub" class="hidden">
-              <span id="file-name" class="text-[10px] text-muted truncate"></span>
+
+              <div class="tyun-input-box">
+                <span class="material-symbols-outlined">
+                  person
+                </span>
+
+                <input
+                  id="username"
+                  class="tyun-input"
+                  placeholder="例如：root"
+                  type="text"
+                  autocomplete="username"
+                  spellcheck="false"
+                  required
+                >
+              </div>
+            </div>
+
+            <div class="tyun-field">
+              <label>
+                认证方式
+                <span>AUTHENTICATION</span>
+              </label>
+
+              <div class="tyun-auth-tabs">
+                <button
+                  type="button"
+                  id="auth-tab-password"
+                  class="auth-tab auth-tab-active"
+                >
+                  <span class="material-symbols-outlined">
+                    password
+                  </span>
+
+                  密码登录
+                </button>
+
+                <button
+                  type="button"
+                  id="auth-tab-key"
+                  class="auth-tab"
+                >
+                  <span class="material-symbols-outlined">
+                    key
+                  </span>
+
+                  SSH 私钥
+                </button>
+              </div>
+
+              <div id="auth-password-section">
+                <div class="tyun-input-box">
+                  <span class="material-symbols-outlined">
+                    lock
+                  </span>
+
+                  <input
+                    id="password"
+                    class="tyun-input"
+                    placeholder="请输入服务器密码"
+                    type="password"
+                    autocomplete="current-password"
+                  >
+                </div>
+              </div>
+
+              <div
+                id="auth-key-section"
+                style="display: none;"
+              >
+                <textarea
+                  id="private-key"
+                  class="tyun-input tyun-key-textarea"
+                  rows="6"
+                  placeholder="请粘贴 OpenSSH 格式的 Ed25519、RSA 或 ECDSA 私钥"
+                  spellcheck="false"
+                ></textarea>
+
+                <div class="tyun-file-row">
+                  <label
+                    for="private-key-file"
+                    class="tyun-file-button"
+                  >
+                    <span class="material-symbols-outlined">
+                      upload_file
+                    </span>
+
+                    选择私钥文件
+                  </label>
+
+                  <input
+                    type="file"
+                    id="private-key-file"
+                    accept=".pem,.key,.txt,.pub"
+                    hidden
+                  >
+
+                  <span
+                    id="file-name"
+                    class="tyun-file-name"
+                  ></span>
+                </div>
+              </div>
+            </div>
+
+            <div
+              id="turnstile-container"
+              class="tyun-turnstile"
+              style="display: none;"
+            >
+              <div id="turnstile-widget"></div>
+            </div>
+
+            <div class="tyun-field">
+              <label for="anon-region">
+                连接区域
+                <span>可选</span>
+              </label>
+
+              <div class="tyun-input-box tyun-select-box">
+                <span class="material-symbols-outlined">
+                  public
+                </span>
+
+                <select
+                  id="anon-region"
+                  class="tyun-input tyun-select"
+                >
+                  <option value="">自动选择最佳节点</option>
+                </select>
+              </div>
+
+              <p class="tyun-field-help">
+                建议选择距离目标 SSH 服务器最近的 Cloudflare 节点。
+              </p>
+            </div>
+
+            <div class="tyun-options-row">
+              <label class="tyun-check">
+                <input
+                  type="checkbox"
+                  id="remember-me"
+                >
+
+                <span class="tyun-checkbox-box">
+                  <span class="material-symbols-outlined">
+                    check
+                  </span>
+                </span>
+
+                <span>
+                  保存本次连接信息
+                  <small>凭据将在当前浏览器中加密保存</small>
+                </span>
+              </label>
+            </div>
+
+            <button
+              id="connect-btn"
+              class="tyun-connect-btn connect-btn"
+              type="button"
+            >
+              <span class="material-symbols-outlined">
+                terminal
+              </span>
+
+              <span>开始连接服务器</span>
+            </button>
+
+            <div class="tyun-status">
+              <span
+                id="status-text"
+                class="tyun-status-text"
+              >
+                <span class="status-dot"></span>
+                状态：未连接
+              </span>
+
+              <span id="github-login-placeholder"></span>
             </div>
           </div>
-        </div>
-        <div id="turnstile-container" style="display:none;">
-          <div id="turnstile-widget" class="flex justify-center"></div>
-        </div>
-        <div>
-          <label class="block text-xs font-bold tracking-[0.1em] text-muted mb-2">REGION_HINT <span class="text-[9px] opacity-60">(可选：请选择距离目标SSH服务器最近的节点)</span></label>
-          <select id="anon-region" class="terminal-input text-[13px] cursor-pointer" style="border:1px solid var(--border-strong);border-bottom:1px solid var(--border-strong);padding:6px 8px;">
-            <option value="">自动</option>
-          </select>
-        </div>
-        <div class="flex items-center gap-2 mt-2">
-          <input type="checkbox" id="remember-me" class="accent-[var(--accent)] w-4 h-4 cursor-pointer">
-          <label for="remember-me" class="text-xs text-muted cursor-pointer select-none">REMEMBER_CONNECTION</label>
-        </div>
-        <div class="pt-4">
-          <button id="connect-btn" class="connect-btn w-full py-3 px-4 text-xs font-bold tracking-[0.1em] uppercase flex items-center justify-center gap-2" type="button">
-            <span class="material-symbols-outlined" style="font-size: 18px;">power_settings_new</span>
-            Execute_Connection
-          </button>
-        </div>
-        <div class="flex justify-between items-center mt-4">
-          <span id="status-text" class="text-[13px] text-muted flex items-center gap-1">
-            <span class="w-2 h-2 bg-surface-dot inline-block"></span> STATUS: OFFLINE
+
+          <section
+            id="recent-connections-section"
+            class="recent-box hidden"
+          >
+            <div class="tyun-recent-header">
+              <div>
+                <span class="material-symbols-outlined">
+                  history
+                </span>
+
+                <div>
+                  <h3>最近连接</h3>
+                  <p>选择一条记录可快速填写连接信息。</p>
+                </div>
+              </div>
+            </div>
+
+            <div
+              id="recent-connections-list"
+              class="tyun-recent-list custom-scrollbar"
+            ></div>
+          </section>
+        </section>
+
+        <footer class="tyun-login-footer">
+          <span class="material-symbols-outlined">
+            verified_user
           </span>
-          <span id="github-login-placeholder"></span>
-        </div>
-        <!-- Recent Connections Section -->
-        <div id="recent-connections-section" class="mt-6 pt-4 border-t border-dim hidden">
-          <label class="block text-xs font-bold tracking-[0.1em] text-[var(--accent-secondary)] mb-3">RECENT_CONNECTIONS</label>
-          <div id="recent-connections-list" class="space-y-2 max-h-[160px] overflow-y-auto custom-scrollbar pr-1"></div>
-        </div>
+
+          <span>
+            会话通过 Cloudflare Workers 安全转发
+          </span>
+        </footer>
       </form>
     `;
 
-    document.getElementById('connect-btn')!.addEventListener('click', () => {
-      this.handleConnect();
-    });
+    document
+      .getElementById('connect-btn')
+      ?.addEventListener('click', () => {
+        this.handleConnect();
+      });
 
-    document.getElementById('connection-form')!.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') this.handleConnect();
-    });
+    document
+      .getElementById('connection-form')
+      ?.addEventListener('keydown', event => {
+        if (
+          event.key === 'Enter' &&
+          !event.shiftKey &&
+          !(event.target instanceof HTMLTextAreaElement)
+        ) {
+          event.preventDefault();
+          this.handleConnect();
+        }
+      });
 
-    // 填充区域下拉选项（自动选项已存在于 HTML，populateRegionSelect 会完整替换）
-    const anonRegionSelect = document.getElementById('anon-region') as HTMLSelectElement | null;
+    const anonRegionSelect = document.getElementById(
+      'anon-region'
+    ) as HTMLSelectElement | null;
+
     if (anonRegionSelect) {
       populateRegionSelect(anonRegionSelect, '');
     }
 
-    // Auth method tab switching
-    document.getElementById('auth-tab-password')!.addEventListener('click', () => {
-      this.setAuthMode('password');
-    });
-    document.getElementById('auth-tab-key')!.addEventListener('click', () => {
-      this.setAuthMode('key');
-    });
+    document
+      .getElementById('auth-tab-password')
+      ?.addEventListener('click', () => {
+        this.setAuthMode('password');
+      });
 
-    // File upload for private key
-    const fileInput = document.getElementById('private-key-file') as HTMLInputElement;
-    const fileNameSpan = document.getElementById('file-name');
+    document
+      .getElementById('auth-tab-key')
+      ?.addEventListener('click', () => {
+        this.setAuthMode('key');
+      });
 
-    fileInput.addEventListener('change', async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
+    const fileInput = document.getElementById(
+      'private-key-file'
+    ) as HTMLInputElement | null;
 
-      try {
-        const content = await file.text();
-        const privateKeyTextarea = document.getElementById('private-key') as HTMLTextAreaElement;
-        privateKeyTextarea.value = content;
-        if (fileNameSpan) {
-          fileNameSpan.textContent = file.name;
+    const fileNameSpan = document.getElementById(
+      'file-name'
+    );
+
+    fileInput?.addEventListener(
+      'change',
+      async event => {
+        const file = (
+          event.target as HTMLInputElement
+        ).files?.[0];
+
+        if (!file) {
+          return;
         }
-      } catch (error) {
-        alert('读取密钥文件失败: ' + (error instanceof Error ? error.message : '未知错误'));
-      }
 
-      // Reset file input
-      fileInput.value = '';
-    });
+        try {
+          const content = await file.text();
+
+          const privateKeyTextarea =
+            document.getElementById(
+              'private-key'
+            ) as HTMLTextAreaElement | null;
+
+          if (privateKeyTextarea) {
+            privateKeyTextarea.value = content;
+          }
+
+          if (fileNameSpan) {
+            fileNameSpan.textContent =
+              `已选择：${file.name}`;
+          }
+        } catch (error) {
+          alert(
+            `读取密钥文件失败：${
+              error instanceof Error
+                ? error.message
+                : '未知错误'
+            }`
+          );
+        }
+
+        fileInput.value = '';
+      }
+    );
   }
 
-  private authMode: 'password' | 'key' = 'password';
+  // ==================== Authentication Mode ====================
 
-  private setAuthMode(mode: 'password' | 'key'): void {
+  private setAuthMode(
+    mode: 'password' | 'key'
+  ): void {
     this.authMode = mode;
-    const pwTab = document.getElementById('auth-tab-password')!;
-    const keyTab = document.getElementById('auth-tab-key')!;
-    const pwSection = document.getElementById('auth-password-section')!;
-    const keySection = document.getElementById('auth-key-section')!;
 
-    pwTab.classList.toggle('auth-tab-active', mode === 'password');
-    keyTab.classList.toggle('auth-tab-active', mode === 'key');
-    pwSection.style.display = mode === 'password' ? '' : 'none';
-    keySection.style.display = mode === 'key' ? '' : 'none';
+    const passwordTab = document.getElementById(
+      'auth-tab-password'
+    );
+
+    const keyTab = document.getElementById(
+      'auth-tab-key'
+    );
+
+    const passwordSection = document.getElementById(
+      'auth-password-section'
+    );
+
+    const keySection = document.getElementById(
+      'auth-key-section'
+    );
+
+    passwordTab?.classList.toggle(
+      'auth-tab-active',
+      mode === 'password'
+    );
+
+    keyTab?.classList.toggle(
+      'auth-tab-active',
+      mode === 'key'
+    );
+
+    if (passwordSection) {
+      passwordSection.style.display =
+        mode === 'password' ? '' : 'none';
+    }
+
+    if (keySection) {
+      keySection.style.display =
+        mode === 'key' ? '' : 'none';
+    }
+  }
+
+  // ==================== Recent Connections ====================
+
+  private getRecentConnections(): RecentConnection[] {
+    const raw = localStorage.getItem(
+      'cloudssh_recent_connections'
+    );
+
+    try {
+      const parsed = raw
+        ? (JSON.parse(raw) as RecentConnection[])
+        : [];
+
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
   }
 
   private renderRecentConnections(): void {
-    const section = document.getElementById('recent-connections-section');
-    const list = document.getElementById('recent-connections-list');
-    if (!section || !list) return;
+    const section = document.getElementById(
+      'recent-connections-section'
+    );
 
-    const raw = localStorage.getItem('cloudssh_recent_connections');
-    let recent: any[] = [];
-    try {
-      recent = raw ? JSON.parse(raw) : [];
-      if (!Array.isArray(recent)) recent = [];
-    } catch {
-      recent = [];
+    const list = document.getElementById(
+      'recent-connections-list'
+    );
+
+    if (!section || !list) {
+      return;
     }
+
+    const recent = this.getRecentConnections();
 
     if (recent.length === 0) {
       section.classList.add('hidden');
+      list.innerHTML = '';
       return;
     }
 
@@ -307,242 +771,453 @@ export class ConnectionForm {
     list.innerHTML = '';
 
     recent.forEach((item, index) => {
-      const itemEl = document.createElement('div');
-      itemEl.className = 'flex justify-between items-center text-xs p-2 border border-dim bg-surface/50 hover:bg-surface hover:border-[var(--accent)] transition-all cursor-pointer group relative';
-      
-      const authLabel = item.authMethod === 'publickey' ? 'KEY' : 'PWD';
-      const labelText = `${item.username}@${item.host}:${item.port}`;
+      const itemElement = document.createElement('div');
 
-      itemEl.innerHTML = `
-        <div class="flex items-center gap-2 overflow-hidden mr-2 select-none flex-1">
-          <span class="material-symbols-outlined text-muted" style="font-size: 14px;">history</span>
-          <span class="text-on-surface truncate" title="${labelText}">${labelText}</span>
-          <span class="text-[9px] font-bold tracking-[0.05em] text-muted border border-dim px-1.5 py-0.2 shrink-0">${authLabel}</span>
-        </div>
-        <button class="delete-history-btn text-muted hover:text-error flex items-center justify-center p-0.5" title="Remove from history">
-          <span class="material-symbols-outlined" style="font-size: 14px;">close</span>
+      itemElement.className = 'tyun-history-item';
+
+      const authenticationLabel =
+        item.authMethod === 'publickey'
+          ? '私钥'
+          : '密码';
+
+      const labelText =
+        `${item.username}@${item.host}:${item.port}`;
+
+      itemElement.innerHTML = `
+        <button
+          type="button"
+          class="tyun-history-main"
+          title="${labelText}"
+        >
+          <span class="tyun-history-icon">
+            <span class="material-symbols-outlined">
+              terminal
+            </span>
+          </span>
+
+          <span class="tyun-history-content">
+            <strong>${item.host}</strong>
+
+            <span>
+              ${item.username} · 端口 ${item.port}
+            </span>
+          </span>
+
+          <span class="tyun-history-auth">
+            ${authenticationLabel}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          class="delete-history-btn history-delete"
+          title="删除这条记录"
+          aria-label="删除这条连接记录"
+        >
+          <span class="material-symbols-outlined">
+            close
+          </span>
         </button>
       `;
 
-      // 点击填入
-      itemEl.addEventListener('click', (e) => {
-        if ((e.target as HTMLElement).closest('.delete-history-btn')) return;
-        this.fillConnection(item);
-      });
+      itemElement
+        .querySelector('.tyun-history-main')
+        ?.addEventListener('click', () => {
+          this.fillConnection(item);
+        });
 
-      // 删除单条
-      itemEl.querySelector('.delete-history-btn')!.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.deleteConnection(index);
-      });
+      itemElement
+        .querySelector('.delete-history-btn')
+        ?.addEventListener('click', event => {
+          event.stopPropagation();
+          this.deleteConnection(index);
+        });
 
-      list.appendChild(itemEl);
+      list.appendChild(itemElement);
     });
   }
 
-  private async fillConnection(item: { host: string; port: number; username: string; authMethod: 'password' | 'publickey'; encryptedCred?: string; region?: string }): Promise<void> {
-    (document.getElementById('host') as HTMLInputElement).value = item.host || '';
-    (document.getElementById('port') as HTMLInputElement).value = (item.port || 22).toString();
-    (document.getElementById('username') as HTMLInputElement).value = item.username || '';
+  private async fillConnection(
+    item: RecentConnection
+  ): Promise<void> {
+    const hostInput = document.getElementById(
+      'host'
+    ) as HTMLInputElement | null;
 
-    // 还原区域下拉（从 recent connection 的 region 字段；老条目无此字段则默认 Auto）
-    const anonRegionSelect = document.getElementById('anon-region') as HTMLSelectElement | null;
-    if (anonRegionSelect) {
-      anonRegionSelect.value = item.region || '';
+    const portInput = document.getElementById(
+      'port'
+    ) as HTMLInputElement | null;
+
+    const usernameInput = document.getElementById(
+      'username'
+    ) as HTMLInputElement | null;
+
+    const passwordInput = document.getElementById(
+      'password'
+    ) as HTMLInputElement | null;
+
+    const privateKeyInput = document.getElementById(
+      'private-key'
+    ) as HTMLTextAreaElement | null;
+
+    const rememberInput = document.getElementById(
+      'remember-me'
+    ) as HTMLInputElement | null;
+
+    const regionSelect = document.getElementById(
+      'anon-region'
+    ) as HTMLSelectElement | null;
+
+    if (hostInput) {
+      hostInput.value = item.host || '';
     }
 
-    if (item.authMethod === 'publickey') {
-      this.setAuthMode('key');
-    } else {
-      this.setAuthMode('password');
+    if (portInput) {
+      portInput.value = String(item.port || 22);
     }
+
+    if (usernameInput) {
+      usernameInput.value = item.username || '';
+    }
+
+    if (regionSelect) {
+      regionSelect.value = item.region || '';
+    }
+
+    this.setAuthMode(
+      item.authMethod === 'publickey'
+        ? 'key'
+        : 'password'
+    );
 
     if (item.encryptedCred) {
-      const cred = await decryptCredentials(item.encryptedCred);
-      if (cred) {
-        (document.getElementById('password') as HTMLInputElement).value = cred.password || '';
-        (document.getElementById('private-key') as HTMLTextAreaElement).value = cred.privateKey || '';
-        (document.getElementById('remember-me') as HTMLInputElement).checked = true;
-      } else {
-        (document.getElementById('password') as HTMLInputElement).value = '';
-        (document.getElementById('private-key') as HTMLTextAreaElement).value = '';
-        (document.getElementById('remember-me') as HTMLInputElement).checked = false;
+      const credentials = await decryptCredentials(
+        item.encryptedCred
+      );
+
+      if (credentials) {
+        if (passwordInput) {
+          passwordInput.value =
+            credentials.password || '';
+        }
+
+        if (privateKeyInput) {
+          privateKeyInput.value =
+            credentials.privateKey || '';
+        }
+
+        if (rememberInput) {
+          rememberInput.checked = true;
+        }
+
+        return;
       }
-    } else {
-      (document.getElementById('password') as HTMLInputElement).value = '';
-      (document.getElementById('private-key') as HTMLTextAreaElement).value = '';
-      (document.getElementById('remember-me') as HTMLInputElement).checked = false;
+    }
+
+    if (passwordInput) {
+      passwordInput.value = '';
+    }
+
+    if (privateKeyInput) {
+      privateKeyInput.value = '';
+    }
+
+    if (rememberInput) {
+      rememberInput.checked = false;
     }
   }
 
   private deleteConnection(index: number): void {
-    const raw = localStorage.getItem('cloudssh_recent_connections');
-    let recent: any[] = [];
-    try {
-      recent = raw ? JSON.parse(raw) : [];
-    } catch {}
-    
-    if (index >= 0 && index < recent.length) {
-      recent.splice(index, 1);
-      localStorage.setItem('cloudssh_recent_connections', JSON.stringify(recent));
-      this.renderRecentConnections();
+    const recent = this.getRecentConnections();
+
+    if (index < 0 || index >= recent.length) {
+      return;
     }
+
+    recent.splice(index, 1);
+
+    localStorage.setItem(
+      'cloudssh_recent_connections',
+      JSON.stringify(recent)
+    );
+
+    this.renderRecentConnections();
   }
 
   private async loadSavedCredentials(): Promise<void> {
-    const recentRaw = localStorage.getItem('cloudssh_recent_connections');
-    let recent: any[] = [];
-    try {
-      recent = recentRaw ? JSON.parse(recentRaw) : [];
-      if (!Array.isArray(recent)) recent = [];
-    } catch {
-      recent = [];
-    }
+    const recent = this.getRecentConnections();
 
-    // 兼容性迁移：如果无 recent_connections 但存在老版单条 cloudssh_cred，则自动将其迁移并存入历史记录
-    const oldCred = localStorage.getItem('cloudssh_cred');
-    if (recent.length === 0 && oldCred) {
-      const cred = await decryptCredentials(oldCred);
-      if (cred) {
-        const item = {
-          id: `${cred.username}@${cred.host}:${cred.port}`,
-          host: cred.host,
-          port: parseInt(cred.port) || 22,
-          username: cred.username,
-          authMethod: cred.authMethod === 'publickey' ? 'publickey' : 'password',
+    const oldCredential = localStorage.getItem(
+      'cloudssh_cred'
+    );
+
+    if (recent.length === 0 && oldCredential) {
+      const credentials = await decryptCredentials(
+        oldCredential
+      );
+
+      if (credentials) {
+        const migratedItem: RecentConnection = {
+          id: `${credentials.username}@${credentials.host}:${credentials.port}`,
+          host: credentials.host,
+          port: Number.parseInt(
+            credentials.port,
+            10
+          ) || 22,
+          username: credentials.username,
+          authMethod:
+            credentials.authMethod === 'publickey'
+              ? 'publickey'
+              : 'password',
           timestamp: Date.now(),
-          encryptedCred: oldCred,
+          encryptedCred: oldCredential,
         };
-        recent.push(item);
-        localStorage.setItem('cloudssh_recent_connections', JSON.stringify(recent));
-        // 清理老旧单项
+
+        recent.push(migratedItem);
+
+        localStorage.setItem(
+          'cloudssh_recent_connections',
+          JSON.stringify(recent)
+        );
+
         localStorage.removeItem('cloudssh_cred');
       }
     }
 
-    // 渲染历史列表
     this.renderRecentConnections();
 
-    // 默认自动填入最近使用的一条（即第一条）
     if (recent.length > 0) {
-      this.fillConnection(recent[0]);
+      await this.fillConnection(recent[0]);
     }
   }
 
+  // ==================== SSH Connection ====================
+
   private async handleConnect(): Promise<void> {
-    const hostInput = (document.getElementById('host') as HTMLInputElement).value;
-    const host = hostInput.replace(/^\[|\]$/g, '').trim();
-    const port = parseInt(
-      (document.getElementById('port') as HTMLInputElement).value || '22'
-    );
-    const username = (document.getElementById('username') as HTMLInputElement).value;
-    const password = (document.getElementById('password') as HTMLInputElement).value;
-    const privateKey = (document.getElementById('private-key') as HTMLTextAreaElement).value;
-    const remember = (document.getElementById('remember-me') as HTMLInputElement).checked;
-    // 匿名路径区域选择（仅作为 manual override；系统不会对此路径自动推断）
-    const anonRegionSelect = document.getElementById('anon-region') as HTMLSelectElement | null;
-    const regionValue = anonRegionSelect ? anonRegionSelect.value : '';
+    const hostInput = document.getElementById(
+      'host'
+    ) as HTMLInputElement | null;
+
+    const portInput = document.getElementById(
+      'port'
+    ) as HTMLInputElement | null;
+
+    const usernameInput = document.getElementById(
+      'username'
+    ) as HTMLInputElement | null;
+
+    const passwordInput = document.getElementById(
+      'password'
+    ) as HTMLInputElement | null;
+
+    const privateKeyInput = document.getElementById(
+      'private-key'
+    ) as HTMLTextAreaElement | null;
+
+    const rememberInput = document.getElementById(
+      'remember-me'
+    ) as HTMLInputElement | null;
+
+    const regionSelect = document.getElementById(
+      'anon-region'
+    ) as HTMLSelectElement | null;
+
+    const host = (
+      hostInput?.value || ''
+    )
+      .replace(/^\[|\]$/g, '')
+      .trim();
+
+    const port =
+      Number.parseInt(
+        portInput?.value || '22',
+        10
+      ) || 22;
+
+    const username =
+      usernameInput?.value.trim() || '';
+
+    const password =
+      passwordInput?.value || '';
+
+    const privateKey =
+      privateKeyInput?.value || '';
+
+    const remember =
+      rememberInput?.checked || false;
+
+    const regionValue =
+      regionSelect?.value || '';
 
     if (!host || !username) {
-      alert('请填写主机名和用户名');
+      alert('请填写服务器地址和登录用户名。');
       return;
     }
 
-    if (this.authMode === 'password' && !password) {
-      alert('请输入密码');
+    if (
+      !Number.isInteger(port) ||
+      port < 1 ||
+      port > 65535
+    ) {
+      alert('请输入有效的 SSH 端口。');
       return;
     }
 
-    if (this.authMode === 'key' && !privateKey) {
-      alert('请粘贴私钥内容');
+    if (
+      this.authMode === 'password' &&
+      !password
+    ) {
+      alert('请输入服务器密码。');
       return;
     }
 
-    // Check Turnstile if enabled
-    if (this.turnstileEnabled && !this.turnstileVerified) {
-      alert('请完成人机验证');
+    if (
+      this.authMode === 'key' &&
+      !privateKey.trim()
+    ) {
+      alert('请粘贴或上传 SSH 私钥。');
       return;
     }
 
-    // 保存连接历史与凭据
-    let encryptedCred: string | undefined = undefined;
+    if (
+      this.turnstileEnabled &&
+      !this.turnstileVerified
+    ) {
+      alert('请先完成人机验证。');
+      return;
+    }
+
+    let encryptedCredential:
+      | string
+      | undefined;
+
     if (remember) {
-      encryptedCred = await encryptCredentials({
-        host,
-        port: port.toString(),
-        username,
-        password,
-        privateKey: this.authMode === 'key' ? privateKey : undefined,
-        authMethod: this.authMode === 'key' ? 'publickey' : 'password',
-      });
+      encryptedCredential =
+        await encryptCredentials({
+          host,
+          port: String(port),
+          username,
+          password,
+          privateKey:
+            this.authMode === 'key'
+              ? privateKey
+              : undefined,
+          authMethod:
+            this.authMode === 'key'
+              ? 'publickey'
+              : 'password',
+        });
     }
 
-    // 更新最近连接列表
-    const recentRaw = localStorage.getItem('cloudssh_recent_connections');
-    let recent: any[] = [];
-    try {
-      recent = recentRaw ? JSON.parse(recentRaw) : [];
-      if (!Array.isArray(recent)) recent = [];
-    } catch {}
+    let recent = this.getRecentConnections();
 
     const id = `${username}@${host}:${port}`;
-    const newRecord = {
+
+    const newRecord: RecentConnection = {
       id,
       host,
       port,
       username,
-      authMethod: this.authMode === 'key' ? 'publickey' : 'password',
+      authMethod:
+        this.authMode === 'key'
+          ? 'publickey'
+          : 'password',
       timestamp: Date.now(),
-      ...(regionValue ? { region: regionValue } : {}),   // 区域偏好持久化到 recent
-      ...(encryptedCred ? { encryptedCred } : {}),
+      ...(regionValue
+        ? { region: regionValue }
+        : {}),
+      ...(encryptedCredential
+        ? {
+            encryptedCred:
+              encryptedCredential,
+          }
+        : {}),
     };
 
-    // 去重：如果已有相同 id 记录，先删除
-    recent = recent.filter(r => r.id !== id);
-    // 插入头部
+    recent = recent.filter(
+      record => record.id !== id
+    );
+
     recent.unshift(newRecord);
-    // 限制最近 5 条
+
     if (recent.length > 5) {
       recent = recent.slice(0, 5);
     }
-    localStorage.setItem('cloudssh_recent_connections', JSON.stringify(recent));
 
-    // 重新渲染历史列表
+    localStorage.setItem(
+      'cloudssh_recent_connections',
+      JSON.stringify(recent)
+    );
+
     this.renderRecentConnections();
 
-    // 通过 TabManager 创建新标签并切换到终端视图
-    const tm = this.options.getTabManager();
-    const displayLabel = `${username}@${host}`;
+    const tabManager =
+      this.options.getTabManager();
 
-    // 切换到终端视图
-    document.getElementById('auth-section')!.classList.add('hidden');
-    document.getElementById('terminal-section')!.classList.remove('hidden');
-    document.getElementById('terminal-section')!.classList.add('flex');
+    const displayLabel =
+      `${username}@${host}`;
 
-    const tab = tm.createTab(displayLabel, { host, port, username });
+    document
+      .getElementById('auth-section')
+      ?.classList.add('hidden');
+
+    const terminalSection =
+      document.getElementById(
+        'terminal-section'
+      );
+
+    terminalSection?.classList.remove('hidden');
+    terminalSection?.classList.add('flex');
+
+    const tab = tabManager.createTab(
+      displayLabel,
+      {
+        host,
+        port,
+        username,
+      }
+    );
+
     const terminal = tab.terminal;
 
     terminal.mount();
 
     try {
-      // 加载已知主机指纹（TOFU 验证）
-      const expectedFingerprint = await loadKnownFingerprint(host, port);
+      const expectedFingerprint =
+        await loadKnownFingerprint(
+          host,
+          port
+        );
 
       await terminal.connect({
         host,
         port,
         username,
         password,
-        authMethod: this.authMode === 'key' ? 'publickey' : 'password',
+        authMethod:
+          this.authMode === 'key'
+            ? 'publickey'
+            : 'password',
         privateKey,
-        expectedFingerprint: expectedFingerprint || undefined,
-        locationHint: regionValue || undefined,
+        expectedFingerprint:
+          expectedFingerprint || undefined,
+        locationHint:
+          regionValue || undefined,
       });
-    } catch (error) {
-      // 连接失败时关闭该标签
-      tm.closeTab(tab.id);
-      document.getElementById('status-text')!.innerHTML = '<span class="w-2 h-2 bg-surface-dot inline-block"></span> STATUS: OFFLINE';
+    } catch {
+      tabManager.closeTab(tab.id);
+
+      const statusText =
+        document.getElementById(
+          'status-text'
+        );
+
+      if (statusText) {
+        statusText.innerHTML = `
+          <span class="status-dot"></span>
+          状态：连接失败
+        `;
+      }
     }
   }
 }
-

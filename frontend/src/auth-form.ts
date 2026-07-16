@@ -137,566 +137,621 @@ export class ConnectionForm {
       },
     });
   }
+
   private render(): void {
-    const container = document.getElementById('connection-form-container')!;
+  const container = document.getElementById('connection-form-container')!;
 
-    container.innerHTML = `
-      <div class="cloudssh-home">
+  container.innerHTML = `
 
-        <!-- 左侧品牌区域 -->
-        <div class="cloudssh-brand">
-
-          <h1>唐云 CloudSSH</h1>
-
-          <h2>
-            安全稳定的 Web SSH 远程终端
-          </h2>
-
-          <p class="cloudssh-description">
-            快速连接你的服务器<br>
-            无需安装客户端，浏览器即可管理 Linux 云服务器
-          </p>
+  <div class="cloudssh-home">
 
 
-          <div class="cloudssh-features">
+    <!-- 左侧品牌 -->
 
-            <span>
-              🛡 安全认证
-            </span>
+    <div class="cloudssh-brand">
 
-            <span>
-              🔑 SSH密钥
-            </span>
 
-            <span>
-              ⚡ 在线终端
-            </span>
+      <h1>
+        唐云 CloudSSH
+      </h1>
+
+
+      <h2>
+        安全稳定的 Web SSH 远程终端
+      </h2>
+
+
+      <p class="cloudssh-description">
+        快速连接你的服务器<br>
+        无需安装客户端，浏览器即可管理 Linux 云服务器
+      </p>
+
+
+
+      <div class="cloudssh-features">
+
+        <span>
+          🛡 安全认证
+        </span>
+
+
+        <span>
+          🔑 SSH密钥
+        </span>
+
+
+        <span>
+          ⚡ 在线终端
+        </span>
+
+
+      </div>
+
+
+    </div>
+
+
+
+
+    <!-- 右侧卡片 -->
+
+
+    <div class="cloudssh-card">
+
+
+      <div class="cloudssh-card-header">
+
+
+        <h3>
+          连接服务器
+        </h3>
+
+
+        <p>
+          创建新的 SSH 会话
+        </p>
+
+
+      </div>
+
+
+
+      <form id="connection-form">
+
+
+
+        <!-- 地址 + 端口 -->
+
+
+        <div class="cloudssh-field-row">
+
+
+
+          <div class="cloudssh-field">
+
+
+            <label>
+              服务器地址
+            </label>
+
+
+            <div class="cloudssh-input-box">
+
+              <span>
+                🌐
+              </span>
+
+
+              <input
+                id="host"
+                class="terminal-input"
+                placeholder="服务器 IP 或域名"
+                type="text"
+                required
+              >
+
+
+            </div>
+
 
           </div>
+
+
+
+
+          <div class="cloudssh-field port-field">
+
+
+            <label>
+              SSH端口
+            </label>
+
+
+            <div class="cloudssh-input-box">
+
+
+              <span>
+                :
+              </span>
+
+
+              <input
+                id="port"
+                class="terminal-input"
+                value="22"
+                placeholder="22"
+                type="text"
+              >
+
+
+            </div>
+
+
+          </div>
+
 
 
         </div>
 
 
 
-        <!-- 右侧连接卡片 -->
-
-        <div class="cloudssh-card">
 
 
-          <div class="cloudssh-card-header">
+        <!-- 用户名 -->
 
-            <h3>
-              连接服务器
-            </h3>
 
-            <p>
-              创建新的 SSH 会话
-            </p>
+        <div class="cloudssh-field">
+
+
+          <label>
+            登录用户名
+          </label>
+
+
+
+          <div class="cloudssh-input-box">
+
+
+            <span>
+              👤
+            </span>
+
+
+
+            <input
+              id="username"
+              class="terminal-input"
+              value="root"
+              placeholder="root"
+              type="text"
+              required
+            >
+
+
+          </div>
+
+
+        </div>
+          <!-- 认证方式 -->
+
+
+        <div class="cloudssh-field">
+
+
+          <label>
+            认证方式
+          </label>
+
+
+
+          <div class="cloudssh-auth-tabs">
+
+
+            <button
+              type="button"
+              id="auth-tab-password"
+              class="auth-tab auth-tab-active"
+            >
+              密码登录
+            </button>
+
+
+
+            <button
+              type="button"
+              id="auth-tab-key"
+              class="auth-tab"
+            >
+              SSH密钥
+            </button>
+
 
           </div>
 
 
 
-          <form id="connection-form">
 
-            <div class="cloudssh-field">
 
-              <label>
-                认证方式
-              </label>
+          <!-- 密码 -->
 
 
-              <div class="cloudssh-auth-tabs">
+          <div id="auth-password-section">
 
 
-                <button
-                  type="button"
-                  id="auth-tab-password"
-                  class="auth-tab auth-tab-active"
-                >
-                  密码登录
-                </button>
+            <div class="cloudssh-input-box">
 
 
-                <button
-                  type="button"
-                  id="auth-tab-key"
-                  class="auth-tab"
-                >
-                  SSH密钥
-                </button>
-
-
-              </div>
-
-
-
-              <div id="auth-password-section">
-
-
-                <div class="cloudssh-input-box">
-
-
-                  <span>
-                    🔑
-                  </span>
-
-
-                  <input
-                    id="password"
-                    class="terminal-input"
-                    placeholder="请输入服务器密码"
-                    type="password"
-                  >
-
-
-                </div>
-
-
-              </div>
-
-
-
-
-              <div id="auth-key-section" style="display:none;">
-
-
-                <textarea
-                  id="private-key"
-                  class="terminal-input"
-                  rows="5"
-                  placeholder="-----BEGIN OPENSSH PRIVATE KEY-----
-粘贴 SSH 私钥内容
------END OPENSSH PRIVATE KEY-----"
-                ></textarea>
-
-
-
-                <div class="cloudssh-file-box">
-
-
-                  <label
-                    for="private-key-file"
-                    class="cloudssh-file-button"
-                  >
-
-                    📂 选择密钥文件
-
-                  </label>
-
-
-
-                  <input
-                    type="file"
-                    id="private-key-file"
-                    accept=".pem,.key,.txt,.pub"
-                    class="hidden"
-                  >
-
-
-
-                  <span id="file-name"></span>
-
-
-                </div>
-
-
-              </div>
-
-
-            </div>
-
-
-
-
-
-            <div
-              id="turnstile-container"
-              style="display:none;"
-            >
-
-              <div
-                id="turnstile-widget"
-              ></div>
-
-            </div>
-
-
-
-
-
-
-            <div class="cloudssh-field">
-
-
-              <label>
-
-                节点区域
-
-                <span class="cloudssh-tip">
-                  (可选)
-                </span>
-
-              </label>
-
-
-
-              <select
-                id="anon-region"
-                class="terminal-input"
-              >
-
-                <option value="">
-                  自动选择
-                </option>
-
-
-              </select>
-
-
-
-            </div>
-
-
-
-
-
-            <div class="cloudssh-remember">
-
-
-              <input
-                type="checkbox"
-                id="remember-me"
-              >
-
-
-              <label for="remember-me">
-
-                保存连接信息
-
-              </label>
-            <div class="cloudssh-actions">
-
-
-              <button
-                id="connect-btn"
-                class="connect-btn"
-                type="button"
-              >
-
-                <span>
-                  ⚡
-                </span>
-
-                连接服务器
-
-              </button>
-
-
-            </div>
-
-
-
-
-
-            <div class="cloudssh-status">
-
-
-              <span
-                id="status-text"
-              >
-
-                <span class="status-dot"></span>
-
-                STATUS: OFFLINE
-
+              <span>
+                🔑
               </span>
 
 
 
+              <input
+                id="password"
+                class="terminal-input"
+                type="password"
+                placeholder="请输入服务器密码"
+              >
+
+
+            </div>
+
+
+          </div>
+
+
+
+
+
+
+          <!-- 私钥 -->
+
+
+          <div
+            id="auth-key-section"
+            style="display:none;"
+          >
+
+
+            <textarea
+              id="private-key"
+              class="terminal-input"
+              rows="5"
+              placeholder="粘贴 SSH 私钥内容"
+            ></textarea>
+
+
+
+            <div class="cloudssh-file-box">
+
+
+              <label
+                for="private-key-file"
+                class="cloudssh-file-button"
+              >
+
+                📂 选择密钥文件
+
+              </label>
+
+
+
+              <input
+                type="file"
+                id="private-key-file"
+                accept=".pem,.key,.txt"
+                class="hidden"
+              >
+
+
+
               <span
-                id="github-login-placeholder"
+                id="file-name"
               ></span>
 
 
             </div>
 
 
-
-          </form>
+          </div>
 
 
         </div>
 
 
-      </div>
-    `;
-
-
-
-    // ===============================
-    // 连接按钮
-    // ===============================
-
-    document
-      .getElementById('connect-btn')!
-      .addEventListener('click', () => {
-
-        this.handleConnect();
-
-      });
 
 
 
 
-    // 回车连接
+        <!-- Turnstile -->
 
-    document
-      .getElementById('connection-form')!
-      .addEventListener('keypress', (e) => {
 
-        if (e.key === 'Enter') {
+        <div
+          id="turnstile-container"
+          style="display:none;"
+        >
 
-          this.handleConnect();
+          <div
+            id="turnstile-widget"
+          ></div>
 
-        }
 
-      });
+        </div>
 
 
 
 
 
-    // 区域选择
-
-    const anonRegionSelect =
-      document.getElementById('anon-region') as HTMLSelectElement | null;
 
 
-    if (anonRegionSelect) {
+        <!-- 区域 -->
 
-      populateRegionSelect(
-        anonRegionSelect,
-        ''
-      );
+
+        <div class="cloudssh-field">
+
+
+          <label>
+            节点区域
+            <span class="cloudssh-tip">
+              (可选)
+            </span>
+          </label>
+
+
+
+          <select
+            id="anon-region"
+            class="terminal-input"
+          >
+
+            <option value="">
+              自动选择
+            </option>
+
+
+          </select>
+
+
+        </div>
+
+
+
+
+
+
+
+        <!-- 保存 -->
+
+
+        <div class="cloudssh-remember">
+
+
+          <input
+            type="checkbox"
+            id="remember-me"
+          >
+
+
+
+          <label for="remember-me">
+
+            保存连接信息
+
+          </label>
+
+
+        </div>
+
+
+
+
+
+
+
+        <!-- 按钮 -->
+
+
+        <button
+          id="connect-btn"
+          type="button"
+          class="connect-btn"
+        >
+
+          ⚡ 连接服务器
+
+        </button>
+
+
+
+
+
+
+
+        <!-- 状态 -->
+
+
+        <div class="cloudssh-status">
+
+
+          <span id="status-text">
+
+            <span class="status-dot"></span>
+
+            STATUS: OFFLINE
+
+          </span>
+
+
+
+          <span
+            id="github-login-placeholder"
+          ></span>
+
+
+        </div>
+
+
+
+      </form>
+
+
+    </div>
+
+
+  </div>
+
+`;
+
+
+
+
+
+// ==========================
+// 事件绑定
+// ==========================
+
+
+document
+  .getElementById('connect-btn')!
+  .addEventListener('click', () => {
+
+    this.handleConnect();
+
+  });
+
+
+
+
+
+document
+  .getElementById('connection-form')!
+  .addEventListener('keypress', (e) => {
+
+
+    if (e.key === 'Enter') {
+
+      this.handleConnect();
+
+    }
+
+
+  });
+
+
+
+
+
+// 区域初始化
+
+const regionSelect =
+  document.getElementById('anon-region')
+    as HTMLSelectElement | null;
+
+
+if (regionSelect) {
+
+  populateRegionSelect(
+    regionSelect,
+    ''
+  );
+
+}
+
+
+
+
+
+
+// 登录方式切换
+
+
+document
+  .getElementById('auth-tab-password')!
+  .addEventListener('click', () => {
+
+    this.setAuthMode('password');
+
+  });
+
+
+
+
+
+document
+  .getElementById('auth-tab-key')!
+  .addEventListener('click', () => {
+
+    this.setAuthMode('key');
+
+  });
+
+
+
+
+
+// 私钥上传
+
+
+const fileInput =
+  document.getElementById(
+    'private-key-file'
+  ) as HTMLInputElement;
+
+
+
+const fileName =
+  document.getElementById(
+    'file-name'
+  );
+
+
+
+fileInput?.addEventListener(
+  'change',
+  async (event) => {
+
+
+    const file =
+      (event.target as HTMLInputElement)
+      .files?.[0];
+
+
+    if (!file) return;
+
+
+
+    const text =
+      await file.text();
+
+
+
+    const keyArea =
+      document.getElementById(
+        'private-key'
+      ) as HTMLTextAreaElement;
+
+
+
+    keyArea.value = text;
+
+
+
+    if (fileName) {
+
+      fileName.textContent =
+        file.name;
 
     }
 
 
 
-
-
-    // ===============================
-    // 登录方式切换
-    // ===============================
-
-
-    document
-      .getElementById('auth-tab-password')!
-      .addEventListener('click', () => {
-
-        this.setAuthMode('password');
-
-      });
-
-
-
-    document
-      .getElementById('auth-tab-key')!
-      .addEventListener('click', () => {
-
-        this.setAuthMode('key');
-
-      });
-
-
-
-
-
-
-    // ===============================
-    // 私钥文件读取
-    // ===============================
-
-
-    const fileInput =
-      document.getElementById(
-        'private-key-file'
-      ) as HTMLInputElement;
-
-
-
-    const fileNameSpan =
-      document.getElementById(
-        'file-name'
-      );
-
-
-
-    fileInput.addEventListener(
-      'change',
-      async (e) => {
-
-
-        const file =
-          (e.target as HTMLInputElement)
-          .files?.[0];
-
-
-
-        if (!file) return;
-
-
-
-        try {
-
-
-          const content =
-            await file.text();
-
-
-
-          const privateKeyTextarea =
-            document.getElementById(
-              'private-key'
-            ) as HTMLTextAreaElement;
-
-
-
-          privateKeyTextarea.value =
-            content;
-
-
-
-          if (fileNameSpan) {
-
-
-            fileNameSpan.textContent =
-              file.name;
-
-
-          }
-
-
-
-        } catch(error) {
-
-
-          alert(
-            '读取密钥文件失败: ' +
-            (
-              error instanceof Error
-              ? error.message
-              : '未知错误'
-            )
-          );
-
-
-        }
-
-
-
-        fileInput.value = '';
-
-      }
-
-    );
+    fileInput.value = '';
 
   }
 
-            </div>
-
-            <div class="cloudssh-field-row">
-
-
-              <div class="cloudssh-field cloudssh-host">
-
-                <label>
-                  服务器地址
-                </label>
-
-
-                <div class="cloudssh-input-box">
-
-                  <span>
-                    &gt;
-                  </span>
-
-                  <input
-                    id="host"
-                    class="terminal-input"
-                    placeholder="192.168.1.1"
-                    type="text"
-                    required
-                  >
-
-                </div>
-
-              </div>
-
-
-
-              <div class="cloudssh-field cloudssh-port">
-
-                <label>
-                  SSH端口
-                </label>
-
-
-                <div class="cloudssh-input-box">
-
-                  <span>
-                    :
-                  </span>
-
-                  <input
-                    id="port"
-                    class="terminal-input"
-                    placeholder="22"
-                    type="text"
-                    value="22"
-                  >
-
-                </div>
-
-              </div>
-
-
-            </div>
-
-
-
-
-            <div class="cloudssh-field">
-
-              <label>
-                登录用户名
-              </label>
-
-
-              <div class="cloudssh-input-box">
-
-
-                <span>
-                  👤
-                </span>
-
-
-                <input
-                  id="username"
-                  class="terminal-input"
-                  value="root"
-                  placeholder="root"
-                  type="text"
-                  required
-                >
-
-
-              </div>
-
-
-            </div>
+);
+      
  
   private authMode: 'password' | 'key' = 'password';
 

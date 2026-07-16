@@ -637,16 +637,14 @@ document
 
 
   });
-;
+
 
 
 
 
 // 区域初始化
 
-const regionSelect =
-  document.getElementById('anon-region')
-    as HTMLSelectElement | null;
+const regionSelect = document.getElementById('anon-region') as HTMLSelectElement | null;
 
 
 if (regionSelect) {

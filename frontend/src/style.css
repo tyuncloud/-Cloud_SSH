@@ -76,7 +76,7 @@ body {
 ========================= */
 
 
-.tyun-login-layout {
+.cloudssh-home {
 
 
     width:100vw;
@@ -132,7 +132,7 @@ body {
 ========================= */
 
 
-.tyun-side-brand {
+.cloudssh-brand {
 
 
     width:480px;
@@ -155,7 +155,7 @@ body {
 
 
 
-.tyun-side-brand h1 {
+.cloudssh-brand h1 {
 
 
     font-size:46px;
@@ -177,7 +177,7 @@ body {
 
 
 
-.tyun-side-brand h1::first-letter {
+.cloudssh-brand h1::first-letter {
 
 
     color:#ff7a00;
@@ -187,7 +187,7 @@ body {
 
 
 
-.tyun-side-brand p {
+.cloudssh-brand p {
 
 
     font-size:20px;
@@ -210,7 +210,7 @@ body {
 /* Main slogan */
 
 
-.tyun-brand-title {
+.cloudssh-brand-title {
 
 
     font-size:38px;
@@ -232,7 +232,7 @@ body {
 
 
 
-.tyun-brand-desc {
+.cloudssh-brand-desc {
 
 
     font-size:16px;
@@ -257,7 +257,7 @@ body {
 /* Feature Cards */
 
 
-.tyun-feature-list {
+.cloudssh-feature-list {
 
 
     display:flex;
@@ -273,7 +273,7 @@ body {
 
 
 
-.tyun-feature-item {
+.cloudssh-feature-item {
 
 
     width:130px;
@@ -317,7 +317,7 @@ body {
 ========================= */
 
 
-.tyun-card {
+.cloudssh-card {
 
 
     width:430px;
@@ -356,7 +356,7 @@ body {
 /* Card Header */
 
 
-.tyun-card-header {
+.cloudssh-card-header {
 
 
     margin-bottom:25px;
@@ -374,7 +374,7 @@ body {
 
 
 
-.tyun-card-header h2 {
+.cloudssh-card-header h2 {
 
 
     font-size:24px;
@@ -390,7 +390,7 @@ body {
 
 
 
-.tyun-card-header p {
+.cloudssh-card-header p {
 
 
     margin-top:8px;
@@ -1101,7 +1101,7 @@ textarea.tyun-input:focus {
 @media (max-height:850px){
 
 
-    .tyun-login-layout {
+    .cloudssh-home {
 
 
         padding:25px 60px;
@@ -1114,7 +1114,7 @@ textarea.tyun-input:focus {
 
 
 
-    .tyun-side-brand {
+    .cloudssh-brand {
 
 
         width:420px;
@@ -1124,7 +1124,7 @@ textarea.tyun-input:focus {
 
 
 
-    .tyun-brand-title {
+    .cloudssh-brand-title {
 
 
         font-size:34px;
@@ -1134,7 +1134,7 @@ textarea.tyun-input:focus {
 
 
 
-    .tyun-side-brand h1 {
+    .cloudssh-brand h1 {
 
 
         font-size:38px;
@@ -1145,7 +1145,7 @@ textarea.tyun-input:focus {
 
 
 
-    .tyun-card {
+    .cloudssh-card {
 
 
         width:410px;
@@ -1197,7 +1197,7 @@ textarea.tyun-input:focus {
 @media(max-width:1400px){
 
 
-    .tyun-login-layout {
+    .cloudssh-home {
 
 
         gap:50px;
@@ -1211,7 +1211,7 @@ textarea.tyun-input:focus {
 
 
 
-    .tyun-side-brand {
+    .cloudssh-brand {
 
 
         width:380px;
@@ -1222,7 +1222,7 @@ textarea.tyun-input:focus {
 
 
 
-    .tyun-side-brand h1 {
+    .cloudssh-brand h1 {
 
 
         font-size:34px;
@@ -1233,7 +1233,7 @@ textarea.tyun-input:focus {
 
 
 
-    .tyun-brand-title {
+    .cloudssh-brand-title {
 
 
         font-size:32px;
@@ -1244,7 +1244,7 @@ textarea.tyun-input:focus {
 
 
 
-    .tyun-card {
+    .cloudssh-card {
 
 
         width:400px;
@@ -1283,7 +1283,7 @@ textarea.tyun-input:focus {
 
 
 
-    .tyun-login-layout {
+    .cloudssh-home{
 
 
         height:auto;
@@ -1310,7 +1310,7 @@ textarea.tyun-input:focus {
 
 
 
-    .tyun-side-brand {
+    .cloudssh-brand {
 
 
         width:100%;
@@ -1327,7 +1327,7 @@ textarea.tyun-input:focus {
 
 
 
-    .tyun-brand-desc {
+    .cloudssh-brand-desc {
 
 
         text-align:center;
@@ -1338,7 +1338,7 @@ textarea.tyun-input:focus {
 
 
 
-    .tyun-feature-list {
+    .cloudssh-feature-list {
 
 
         justify-content:center;
@@ -1366,7 +1366,7 @@ textarea.tyun-input:focus {
 
 
 
-    .tyun-login-layout {
+    .cloudssh-home {
 
 
         padding:25px 15px;
@@ -1378,7 +1378,7 @@ textarea.tyun-input:focus {
 
 
 
-    .tyun-side-brand h1 {
+    .cloudssh-brand h1 {
 
 
         font-size:30px;
@@ -1390,7 +1390,7 @@ textarea.tyun-input:focus {
 
 
 
-    .tyun-brand-title {
+    .cloudssh-brand-title {
 
 
         font-size:26px;
@@ -1402,7 +1402,7 @@ textarea.tyun-input:focus {
 
 
 
-    .tyun-side-brand p {
+    .cloudssh-brand p {
 
 
         font-size:15px;
@@ -1414,7 +1414,7 @@ textarea.tyun-input:focus {
 
 
 
-    .tyun-feature-list {
+    .cloudssh-feature-list {
 
 
         display:none;
@@ -1426,7 +1426,7 @@ textarea.tyun-input:focus {
 
 
 
-    .tyun-card {
+    .cloudssh-card {
 
 
         width:100%;
@@ -1484,8 +1484,8 @@ textarea.tyun-input:focus {
 ========================= */
 
 
-.tyun-card,
-.tyun-side-brand {
+.cloudssh-card,
+.cloudssh-brand {
 
 
     animation:

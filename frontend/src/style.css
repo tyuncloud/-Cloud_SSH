@@ -1,73 +1,85 @@
 /* =====================================================
-   Tyun CloudSSH V1
-   Enterprise Orange UI
+   Tyun CloudSSH V2
+   IDC Landing Style
+   Orange Theme
 ===================================================== */
 
 
-/* Reset */
+/* =========================
+   Global Reset
+========================= */
+
 
 * {
+
     box-sizing:border-box;
+
     margin:0;
+
     padding:0;
+
 }
 
 
 html,
 body {
 
+
     width:100%;
+
     height:100%;
+
 
     overflow:hidden;
 
-}
 
+}
 
 
 body {
 
+
     font-family:
 
     "Microsoft YaHei",
-    "Inter",
+    "PingFang SC",
     Arial,
     sans-serif;
 
 
+    color:#1f2937;
+
+
     background:
 
+
     linear-gradient(
+
         135deg,
+
         #fff7ed 0%,
-        #ffffff 55%,
-        #f8fafc 100%
+
+        #ffffff 45%,
+
+        #fffaf5 100%
+
     );
 
 
-    color:#1f2937;
-
 }
 
 
 
-.hidden {
 
-    display:none!important;
-
-}
-
-
-
-/* =====================================================
+/* =========================
    Main Layout
-===================================================== */
+========================= */
 
 
 .tyun-login-layout {
 
 
-    width:100%;
+    width:100vw;
 
     height:100vh;
 
@@ -75,7 +87,7 @@ body {
     display:flex;
 
 
-    flex-direction:column;
+    flex-direction:row;
 
 
     align-items:center;
@@ -84,63 +96,91 @@ body {
     justify-content:center;
 
 
-    padding:20px;
+    gap:100px;
 
+
+    padding:40px 80px;
 
 
 }
 
 
 
-/* =====================================================
-   Brand Header
-===================================================== */
+
+
+/* =========================
+   Hide Old Header
+========================= */
+
+
+.tyun-old-header,
+.connection-title {
+
+
+    display:none!important;
+
+
+}
+
+
+
+
+
+
+/* =========================
+   Left Brand Area
+========================= */
 
 
 .tyun-side-brand {
 
 
-    width:auto;
+    width:480px;
 
 
-    text-align:center;
+    display:flex;
 
 
-    align-items:center;
+    flex-direction:column;
 
 
-    margin-bottom:25px;
+    justify-content:center;
+
+
+    align-items:flex-start;
 
 
 }
 
-
-
-.tyun-large-logo {
-
-
-    display:none;
-
-}
 
 
 
 .tyun-side-brand h1 {
 
 
-    font-size:40px;
+    font-size:46px;
 
 
-    font-weight:800;
+    font-weight:900;
 
 
     letter-spacing:-1px;
 
 
+    color:#111827;
+
+
+    margin-bottom:15px;
+
+
+}
+
+
+
+.tyun-side-brand h1::first-letter {
+
+
     color:#ff7a00;
-
-
-    margin-bottom:10px;
 
 
 }
@@ -150,42 +190,137 @@ body {
 .tyun-side-brand p {
 
 
-    font-size:18px;
+    font-size:20px;
 
 
     color:#64748b;
 
 
+    line-height:1.7;
+
+
+    margin-bottom:35px;
+
+
 }
 
 
 
-/* feature hidden for clean login */
+
+/* Main slogan */
+
+
+.tyun-brand-title {
+
+
+    font-size:38px;
+
+
+    font-weight:800;
+
+
+    color:#111827;
+
+
+    line-height:1.25;
+
+
+    margin-bottom:18px;
+
+
+}
+
+
+
+.tyun-brand-desc {
+
+
+    font-size:16px;
+
+
+    color:#64748b;
+
+
+    line-height:1.8;
+
+
+    max-width:420px;
+
+
+}
+
+
+
+
+
+
+/* Feature Cards */
 
 
 .tyun-feature-list {
 
 
-    display:none;
+    display:flex;
+
+
+    gap:14px;
+
+
+    margin-top:35px;
+
 
 }
 
 
 
+.tyun-feature-item {
 
 
-/* =====================================================
-   Login Card
-===================================================== */
+    width:130px;
+
+
+    height:52px;
+
+
+    display:flex;
+
+
+    align-items:center;
+
+
+    justify-content:center;
+
+
+    border-radius:12px;
+
+
+    border:
+
+    1px solid #fed7aa;
+
+
+    background:#ffffff;
+
+
+    color:#ff7a00;
+
+
+    font-size:14px;
+
+
+    font-weight:600;
+
+
+}
+/* =========================
+   Right SSH Card
+========================= */
 
 
 .tyun-card {
 
 
     width:430px;
-
-
-    max-height:680px;
 
 
     background:#ffffff;
@@ -205,7 +340,10 @@ body {
     box-shadow:
 
 
-    0 20px 50px rgba(15,23,42,.12);
+    0 25px 60px
+
+    rgba(255,122,0,.12);
+
 
 
 }
@@ -213,10 +351,23 @@ body {
 
 
 
+
+
+/* Card Header */
+
+
 .tyun-card-header {
 
 
-    margin-bottom:20px;
+    margin-bottom:25px;
+
+
+    padding-bottom:18px;
+
+
+    border-bottom:
+
+    1px solid #f1f5f9;
 
 
 }
@@ -226,10 +377,10 @@ body {
 .tyun-card-header h2 {
 
 
-    font-size:26px;
+    font-size:24px;
 
 
-    font-weight:700;
+    font-weight:800;
 
 
     color:#111827;
@@ -242,28 +393,29 @@ body {
 .tyun-card-header p {
 
 
-    margin-top:6px;
-
-
-    color:#64748b;
+    margin-top:8px;
 
 
     font-size:14px;
+
+
+    color:#64748b;
 
 
 }
 
 
 
-/* =====================================================
-   Form
-===================================================== */
+
+/* =========================
+   Form Fields
+========================= */
 
 
 .tyun-field {
 
 
-    margin-bottom:12px;
+    margin-bottom:18px;
 
 
 }
@@ -276,13 +428,13 @@ body {
     display:block;
 
 
-    margin-bottom:6px;
+    margin-bottom:8px;
+
+
+    color:#475569;
 
 
     font-size:14px;
-
-
-    color:#334155;
 
 
     font-weight:600;
@@ -292,7 +444,33 @@ body {
 
 
 
-/* Input */
+
+
+/* Host + Port */
+
+
+.tyun-grid {
+
+
+    display:grid;
+
+
+    grid-template-columns:
+
+    1fr 120px;
+
+
+    gap:14px;
+
+
+}
+
+
+
+
+
+
+/* Input Box */
 
 
 .tyun-input-box {
@@ -301,7 +479,7 @@ body {
     width:100%;
 
 
-    height:44px;
+    height:46px;
 
 
     display:flex;
@@ -316,7 +494,7 @@ body {
     padding:0 14px;
 
 
-    background:#fff;
+    background:#ffffff;
 
 
     border:
@@ -324,13 +502,26 @@ body {
     1px solid #e2e8f0;
 
 
-    border-radius:10px;
+    border-radius:12px;
 
 
     transition:.2s;
 
 
 }
+
+
+
+
+.tyun-input-box:hover {
+
+
+    border-color:#fdba74;
+
+
+}
+
+
 
 
 
@@ -342,14 +533,24 @@ body {
 
     box-shadow:
 
-    0 0 0 3px rgba(255,122,0,.12);
+
+    0 0 0 4px
+
+    rgba(255,122,0,.12);
+
 
 
 }
 
 
 
+
+
+
 .tyun-input {
+
+
+    flex:1;
 
 
     width:100%;
@@ -364,7 +565,7 @@ body {
     outline:none;
 
 
-    background:none;
+    background:transparent;
 
 
     color:#111827;
@@ -380,6 +581,8 @@ body {
 
 
 
+
+
 .tyun-input::placeholder {
 
 
@@ -388,9 +591,37 @@ body {
 
 }
 
-/* =====================================================
+
+
+
+
+
+/* Icon */
+
+
+
+.tyun-input-box svg {
+
+
+    width:18px;
+
+
+    height:18px;
+
+
+    color:#ff7a00;
+
+
+}
+
+
+
+
+
+
+/* =========================
    Auth Tabs
-===================================================== */
+========================= */
 
 
 .tyun-auth-tabs {
@@ -399,10 +630,24 @@ body {
     display:flex;
 
 
-    gap:10px;
+    width:100%;
 
 
-    margin-bottom:12px;
+    height:44px;
+
+
+    margin-bottom:14px;
+
+
+    border-radius:12px;
+
+
+    overflow:hidden;
+
+
+    border:
+
+    1px solid #fed7aa;
 
 
 }
@@ -415,15 +660,7 @@ body {
     flex:1;
 
 
-    height:40px;
-
-
-    border-radius:10px;
-
-
-    border:
-
-    1px solid #e2e8f0;
+    border:none;
 
 
     background:#ffffff;
@@ -441,215 +678,13 @@ body {
     cursor:pointer;
 
 
-    transition:.2s;
-
-
 }
 
-
-
-.auth-tab:hover {
-
-
-    border-color:#ff7a00;
-
-
-    color:#ff7a00;
-
-
-}
 
 
 
 
 .auth-tab-active {
-
-
-    background:#ff7a00;
-
-
-    color:#ffffff;
-
-
-    border-color:#ff7a00;
-
-
-}
-
-
-
-
-
-/* =====================================================
-   Textarea / SSH Key
-===================================================== */
-
-
-textarea.tyun-input {
-
-
-    width:100%;
-
-
-    min-height:100px;
-
-
-    padding:12px;
-
-
-    resize:none;
-
-
-    border:
-
-    1px solid #e2e8f0;
-
-
-    border-radius:10px;
-
-
-    color:#111827;
-
-
-    font-size:14px;
-
-
-    line-height:1.5;
-
-
-}
-
-
-
-
-
-/* File Button */
-
-
-.tyun-file-button {
-
-
-    display:inline-flex;
-
-
-    align-items:center;
-
-
-    justify-content:center;
-
-
-    margin-top:10px;
-
-
-    padding:8px 14px;
-
-
-    border-radius:8px;
-
-
-    background:#fff7ed;
-
-
-    border:
-
-    1px solid #fed7aa;
-
-
-    color:#ff7a00;
-
-
-    font-size:14px;
-
-
-    cursor:pointer;
-
-
-}
-
-
-
-#file-name {
-
-
-    margin-left:8px;
-
-
-    color:#64748b;
-
-
-    font-size:13px;
-
-
-}
-
-
-
-
-
-/* =====================================================
-   Port + Username Grid
-===================================================== */
-
-
-.tyun-grid {
-
-
-    display:grid;
-
-
-    grid-template-columns:
-
-    1fr 1fr;
-
-
-    gap:12px;
-
-
-}
-
-
-
-
-
-
-/* =====================================================
-   Region Select
-===================================================== */
-
-
-select.tyun-input {
-
-
-    cursor:pointer;
-
-
-}
-
-
-
-
-
-/* =====================================================
-   Connect Button
-===================================================== */
-
-
-.tyun-connect-btn {
-
-
-    width:100%;
-
-
-    height:48px;
-
-
-    margin-top:8px;
-
-
-    border:none;
-
-
-    border-radius:12px;
 
 
     background:
@@ -669,25 +704,245 @@ select.tyun-input {
     color:#ffffff;
 
 
+}
+
+/* =========================
+   Password / Key Area
+========================= */
+
+
+textarea.tyun-input {
+
+
+    width:100%;
+
+
+    min-height:110px;
+
+
+    padding:14px;
+
+
+    resize:none;
+
+
+    border:
+
+    1px solid #e2e8f0;
+
+
+    border-radius:12px;
+
+
+    background:#ffffff;
+
+
+    color:#111827;
+
+
+    font-size:14px;
+
+
+    line-height:1.6;
+
+
+}
+
+
+
+textarea.tyun-input:focus {
+
+
+    outline:none;
+
+
+    border-color:#ff7a00;
+
+
+}
+
+
+
+
+
+
+/* File Upload Button */
+
+
+.tyun-file-button {
+
+
+    display:inline-flex;
+
+
+    align-items:center;
+
+
+    justify-content:center;
+
+
+    margin-top:10px;
+
+
+    height:36px;
+
+
+    padding:0 15px;
+
+
+    border-radius:10px;
+
+
+    background:#fff7ed;
+
+
+    border:
+
+    1px solid #fed7aa;
+
+
+    color:#ff7a00;
+
+
+    font-size:14px;
+
+
+    cursor:pointer;
+
+
+}
+
+
+
+
+.tyun-file-button:hover {
+
+
+    background:#ffedd5;
+
+
+}
+
+
+
+
+
+
+
+/* =========================
+   Remember Checkbox
+========================= */
+
+
+.tyun-checkbox {
+
+
+    display:flex;
+
+
+    align-items:center;
+
+
+    gap:8px;
+
+
+    margin-top:15px;
+
+
+    color:#64748b;
+
+
+    font-size:14px;
+
+
+}
+
+
+
+.tyun-checkbox input {
+
+
+    width:16px;
+
+
+    height:16px;
+
+
+    accent-color:#ff7a00;
+
+
+}
+
+
+
+
+
+
+/* =========================
+   Connect Button
+========================= */
+
+
+.tyun-connect-btn {
+
+
+    width:100%;
+
+
+    height:50px;
+
+
+    margin-top:22px;
+
+
+    border:none;
+
+
+    border-radius:14px;
+
+
+    cursor:pointer;
+
+
+    color:#ffffff;
+
+
     font-size:16px;
 
 
     font-weight:700;
 
 
-    cursor:pointer;
+
+    background:
 
 
-    transition:.25s;
+    linear-gradient(
+
+        135deg,
+
+        #ff7a00,
+
+        #ff9d2e
+
+    );
+
 
 
     box-shadow:
 
 
-    0 10px 25px rgba(255,122,0,.25);
+    0 12px 30px
+
+    rgba(255,122,0,.28);
+
+
+
+    transition:.25s;
 
 
 }
+
 
 
 
@@ -702,7 +957,10 @@ select.tyun-input {
     box-shadow:
 
 
-    0 15px 30px rgba(255,122,0,.35);
+    0 18px 35px
+
+    rgba(255,122,0,.35);
+
 
 
 }
@@ -712,38 +970,12 @@ select.tyun-input {
 
 
 
-/* =====================================================
-   Security Notice
-===================================================== */
+.tyun-connect-btn:active {
 
 
-.tyun-security-box {
+    transform:
 
-
-    margin-top:14px;
-
-
-    padding:12px;
-
-
-    border-radius:10px;
-
-
-    background:#fff7ed;
-
-
-    border:
-
-    1px solid #fed7aa;
-
-
-    color:#9a3412;
-
-
-    font-size:13px;
-
-
-    line-height:1.6;
+    translateY(0);
 
 
 }
@@ -752,40 +984,14 @@ select.tyun-input {
 
 
 
-/* =====================================================
-   Turnstile
-===================================================== */
 
 
-#turnstile-container {
-
-
-    margin:12px 0;
-
-
-}
-
-
-
-
-
-/* =====================================================
-   Status
-===================================================== */
+/* =========================
+   Status Area
+========================= */
 
 
 .tyun-status {
-
-
-    margin-top:14px;
-
-
-    padding-top:14px;
-
-
-    border-top:
-
-    1px solid #f1f5f9;
 
 
     display:flex;
@@ -794,13 +1000,27 @@ select.tyun-input {
     align-items:center;
 
 
-    justify-content:space-between;
+    justify-content:flex-start;
 
 
-    font-size:13px;
+    gap:8px;
+
+
+    margin-top:18px;
+
+
+    padding-top:15px;
+
+
+    border-top:
+
+    1px solid #f1f5f9;
 
 
     color:#64748b;
+
+
+    font-size:14px;
 
 
 }
@@ -810,22 +1030,16 @@ select.tyun-input {
 .status-dot {
 
 
-    display:inline-block;
+    width:9px;
 
 
-    width:8px;
-
-
-    height:8px;
+    height:9px;
 
 
     border-radius:50%;
 
 
-    background:#94a3b8;
-
-
-    margin-right:6px;
+    background:#cbd5e1;
 
 
 }
@@ -845,44 +1059,55 @@ select.tyun-input {
 
 
 
-/* Github */
+/* =========================
+   Remove History Area
+========================= */
+
+
+/* 最近连接不显示 */
+
+
+.tyun-recent-connections,
+.recent-connections,
+#recent-connections {
+
+
+    display:none!important;
+
+
+}
+
+
+
+
+
+
+/* GitHub footer */
 
 
 .tyun-github-btn {
 
 
-    background:#111827;
-
-
-    color:#ffffff;
-
-
-    border:none;
-
-
-    border-radius:8px;
-
-
-    padding:7px 12px;
-
-
-    cursor:pointer;
+    display:none!important;
 
 
 }
 
-/* =====================================================
-   Height Optimization
-===================================================== */
+/* =========================
+   Desktop Height Fix
+========================= */
 
 
-@media (max-height:800px){
+@media (max-height:850px){
 
 
     .tyun-login-layout {
 
 
-        padding:15px;
+        padding:25px 60px;
+
+
+        gap:70px;
 
 
     }
@@ -892,10 +1117,108 @@ select.tyun-input {
     .tyun-side-brand {
 
 
-        margin-bottom:15px;
+        width:420px;
 
 
     }
+
+
+
+    .tyun-brand-title {
+
+
+        font-size:34px;
+
+
+    }
+
+
+
+    .tyun-side-brand h1 {
+
+
+        font-size:38px;
+
+
+    }
+
+
+
+
+    .tyun-card {
+
+
+        width:410px;
+
+
+        padding:24px;
+
+
+    }
+
+
+
+
+    .tyun-field {
+
+
+        margin-bottom:14px;
+
+
+    }
+
+
+
+    .tyun-connect-btn {
+
+
+        margin-top:15px;
+
+
+        height:46px;
+
+
+    }
+
+
+
+}
+
+
+
+
+
+
+/* =========================
+   Laptop 1366
+========================= */
+
+
+@media(max-width:1400px){
+
+
+    .tyun-login-layout {
+
+
+        gap:50px;
+
+
+        padding:30px;
+
+
+    }
+
+
+
+
+    .tyun-side-brand {
+
+
+        width:380px;
+
+
+    }
+
 
 
 
@@ -909,66 +1232,22 @@ select.tyun-input {
 
 
 
-    .tyun-side-brand p {
+
+    .tyun-brand-title {
 
 
-        font-size:16px;
+        font-size:32px;
 
 
     }
+
 
 
 
     .tyun-card {
 
 
-        padding:24px;
-
-
-        max-height:620px;
-
-
-    }
-
-
-
-    .tyun-card-header {
-
-
-        margin-bottom:15px;
-
-
-    }
-
-
-
-    .tyun-card-header h2 {
-
-
-        font-size:22px;
-
-
-    }
-
-
-
-    .tyun-field {
-
-
-        margin-bottom:10px;
-
-
-    }
-
-
-
-    .tyun-security-box {
-
-
-        margin-top:10px;
-
-
-        padding:10px;
+        width:400px;
 
 
     }
@@ -982,12 +1261,14 @@ select.tyun-input {
 
 
 
-/* =====================================================
-   Mobile
-===================================================== */
 
 
-@media(max-width:600px){
+/* =========================
+   Tablet
+========================= */
+
+
+@media(max-width:900px){
 
 
     html,
@@ -1011,13 +1292,88 @@ select.tyun-input {
         min-height:100vh;
 
 
-        padding:20px;
+        flex-direction:column;
 
 
         justify-content:flex-start;
 
 
+        padding:40px 20px;
+
+
+        gap:30px;
+
+
     }
+
+
+
+
+
+    .tyun-side-brand {
+
+
+        width:100%;
+
+
+        align-items:center;
+
+
+        text-align:center;
+
+
+    }
+
+
+
+
+    .tyun-brand-desc {
+
+
+        text-align:center;
+
+
+    }
+
+
+
+
+    .tyun-feature-list {
+
+
+        justify-content:center;
+
+
+    }
+
+
+
+}
+
+
+
+
+
+
+
+
+/* =========================
+   Mobile
+========================= */
+
+
+@media(max-width:520px){
+
+
+
+    .tyun-login-layout {
+
+
+        padding:25px 15px;
+
+
+    }
+
 
 
 
@@ -1033,6 +1389,19 @@ select.tyun-input {
 
 
 
+
+    .tyun-brand-title {
+
+
+        font-size:26px;
+
+
+    }
+
+
+
+
+
     .tyun-side-brand p {
 
 
@@ -1044,19 +1413,33 @@ select.tyun-input {
 
 
 
+
+    .tyun-feature-list {
+
+
+        display:none;
+
+
+    }
+
+
+
+
+
     .tyun-card {
 
 
         width:100%;
 
 
-        max-width:430px;
-
-
         padding:20px;
 
 
+        border-radius:18px;
+
+
     }
+
 
 
 
@@ -1066,10 +1449,25 @@ select.tyun-input {
 
         grid-template-columns:
 
+
         1fr;
 
 
     }
+
+
+
+
+
+    .tyun-auth-tabs {
+
+
+        height:42px;
+
+
+    }
+
+
 
 
 
@@ -1081,9 +1479,9 @@ select.tyun-input {
 
 
 
-/* =====================================================
-   Animation
-===================================================== */
+/* =========================
+   Smooth Animation
+========================= */
 
 
 .tyun-card,
@@ -1092,7 +1490,8 @@ select.tyun-input {
 
     animation:
 
-    tyunFade .35s ease;
+
+    tyunShow .35s ease;
 
 
 }
@@ -1100,7 +1499,8 @@ select.tyun-input {
 
 
 
-@keyframes tyunFade {
+
+@keyframes tyunShow {
 
 
     from {
@@ -1111,7 +1511,8 @@ select.tyun-input {
 
         transform:
 
-        translateY(15px);
+
+        translateY(20px);
 
 
     }
@@ -1126,6 +1527,7 @@ select.tyun-input {
 
         transform:
 
+
         translateY(0);
 
 
@@ -1139,15 +1541,16 @@ select.tyun-input {
 
 
 
-/* =====================================================
-   Remove Old Cyber Effects
-===================================================== */
+/* =========================
+   Old Cyber Cleanup
+========================= */
 
 
+.cyber-bg,
+.scanline,
 .scanlines,
-.cyber-effect,
-.glow-text,
-.terminal-glow {
+.glow,
+.terminal-effect {
 
 
     display:none!important;

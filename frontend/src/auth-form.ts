@@ -146,50 +146,147 @@ export class ConnectionForm {
   <div class="cloudssh-home">
 
 
-    <!-- 左侧品牌 -->
+   <!-- 左侧品牌 -->
 
-    <div class="cloudssh-brand">
-
-
-      <h1>
-        唐云 CloudSSH
-      </h1>
+<div class="cloudssh-brand">
 
 
-      <h2>
-        安全稳定的 Web SSH 远程终端
-      </h2>
+<h1>
 
+<span class="brand-orange">
+    唐云
+</span>
 
-      <p class="cloudssh-description">
-        快速连接你的服务器<br>
-        无需安装客户端，浏览器即可管理 Linux 云服务器
-      </p>
+<span>
+    CloudSSH
+</span>
+
+</h1>
 
 
 
-      <div class="cloudssh-features">
-
-        <span>
-          🛡 安全认证
-        </span>
+<h2>
+    安全稳定的 Web SSH 云端终端
+</h2>
 
 
-        <span>
-          🔑 SSH密钥
-        </span>
+
+<p class="cloudssh-description">
+
+    无需安装客户端，<br>
+    浏览器即可安全管理 Linux 云服务器
+
+</p>
 
 
-        <span>
-          ⚡ 在线终端
-        </span>
 
 
-      </div>
+
+<div class="cloudssh-terminal-preview">
+
+
+    <div class="terminal-header">
+
+        CloudSSH Terminal
+
+    </div>
+
+
+
+    <div class="terminal-body">
+
+
+        <div class="terminal-command">
+
+            root@cloudssh:~$ ssh server
+
+        </div>
+
+
+        <div class="terminal-line">
+
+            > Connecting secure channel...
+
+        </div>
+
+
+        <div class="terminal-success">
+
+            ✓ SSH handshake completed
+
+        </div>
+
+
+        <div class="terminal-success">
+
+            ✓ Terminal session ready
+
+        </div>
+
+
+        <div class="terminal-cursor">
+
+            _
+
+        </div>
 
 
     </div>
 
+
+</div>
+<!-- cloudssh-terminal-preview -->
+
+<div class="cloudssh-status-panel">
+
+    <div>
+        <span>🟢</span>
+        Service Online
+    </div>
+
+    <div>
+        <span>🔒</span>
+        Secure Channel
+    </div>
+
+    <div>
+        <span>⚡</span>
+        Low Latency
+    </div>
+
+</div>
+
+
+
+
+
+<div class="cloudssh-features">
+
+
+    <span>
+        🛡 企业级安全认证
+    </span>
+
+
+    <span>
+        🔑 SSH 密钥登录
+    </span>
+
+
+    <span>
+        ⚡ Web 在线终端
+    </span>
+
+
+</div>
+
+
+
+</div>
+<!-- cloudssh-brand -->
+
+
+<!-- 右侧卡片 -->
 
 
 

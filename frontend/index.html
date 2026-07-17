@@ -45,26 +45,11 @@
 <body class="min-h-screen font-body text-sm">
   <div id="app">
     <!-- Login Page (匿名连接) -->
-    <div id="auth-section" class="min-h-screen flex items-center justify-center p-6 relative overflow-y-auto">
-      <div class="scanlines"></div>
-      <div class="flicker"></div>
-      <main class="w-full max-w-md relative z-10">
-        <div class="mb-8 text-center">
-          <div class="text-3xl font-bold text-primary tracking-tighter mb-2">CloudSSH<span class="blinking-cursor"></span></div>
-        </div>
-        <div class="cyber-box p-6 shadow-2xl relative">
-          <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-50"></div>
-          <div class="flex items-center justify-between mb-8 pb-4 border-b border-dim">
-            <span class="text-xs font-bold tracking-[0.1em] text-[var(--accent-secondary)]">CONNECTION_PARAMETERS</span>
-            <span class="material-symbols-outlined text-[var(--accent-secondary)]" style="font-variation-settings: 'FILL' 0;">terminal</span>
-          </div>
-          <div id="connection-form-container"></div>
-        </div>
-        <div class="mt-8 text-center text-[13px] text-muted opacity-60">SYSTEM READY. WAITING FOR INPUT.</div>
-        <div class="mt-4 text-center">
-          <a href="https://github.com/newbietan/CloudSSH" class="text-[13px] text-primary opacity-60 hover:opacity-100 transition-colors tracking-widest uppercase">[ GitHub Open Source ]</a>
-        </div>
-      </main>
+
+   <div id="auth-section">
+
+    <div id="connection-form-container"></div>
+
     </div>
 
     <!-- User Space Page (登录后) -->

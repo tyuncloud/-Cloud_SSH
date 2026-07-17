@@ -1,375 +1,861 @@
+import { loadKnownFingerprint } from './terminal';
+import type { TabManager } from './tab-manager';
 import { populateRegionSelect, regionLabel } from './regions';
-
-interface UserInfo {
-  id: number;
-  github_id: number;
-  username: string;
-  avatar_url: string;
+// --- Credential encryption helpers ---
+async function deriveKey(salt: Uint8Array): Promise<CryptoKey> {
+  const raw = new TextEncoder().encode(window.location.origin + ':cloudssh');
+  const baseKey = await crypto.subtle.importKey('raw', raw, 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: salt as any, iterations: 100000, hash: 'SHA-256' },
+    baseKey,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
 }
 
-interface ServerConfig {
-  id: number;
-  user_id: number;
-  name: string;
-  host: string;
-  port: number;
-  username: string;
-  auth_method: 'password' | 'publickey';
-  region?: string | null;
-  inferred_hint?: string | null;
-  created_at: string;
-  updated_at: string;
+async function encryptCredentials(data: object): Promise<string> {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveKey(salt);
+  const encoded = new TextEncoder().encode(JSON.stringify(data));
+  const encrypted = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded));
+  const combined = new Uint8Array(salt.length + iv.length + encrypted.length);
+  combined.set(salt, 0);
+  combined.set(iv, salt.length);
+  combined.set(encrypted, salt.length + iv.length);
+  let binary = '';
+  for (let i = 0; i < combined.length; i++) binary += String.fromCharCode(combined[i]);
+  return btoa(binary);
 }
 
-/**
- * 用户空间 — 服务器列表管理组件
- */
-export class ServerList {
-  private user: UserInfo;
-  private servers: ServerConfig[] = [];
-  private onLogout: () => void;
-  private onConnect: (wsUrl: string, serverName: string, hostInfo?: { host: string; port: number }) => void;
-  private editingServerId: number | null = null;
-  private modalAuthMode: 'password' | 'key' = 'password';
+async function decryptCredentials(stored: string): Promise<{ host: string; port: string; username: string; password: string; privateKey?: string; authMethod?: string } | null> {
+  try {
+    const raw = Uint8Array.from(atob(stored), c => c.charCodeAt(0));
+    const salt = raw.slice(0, 16);
+    const iv = raw.slice(16, 28);
+    const data = raw.slice(28);
+    const key = await deriveKey(salt);
+    const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, data);
+    return JSON.parse(new TextDecoder().decode(decrypted));
+  } catch {
+    return null;
+  }
+}
 
-  constructor(
-    user: UserInfo,
-    onLogout: () => void,
-    onConnect: (wsUrl: string, serverName: string, hostInfo?: { host: string; port: number }) => void
-  ) {
-    this.user = user;
-    this.onLogout = onLogout;
-    this.onConnect = onConnect;
-    this.init();
+export interface ConnectionFormOptions {
+  /** 获取 TabManager 实例 */
+  getTabManager: () => TabManager;
+}
+
+export class ConnectionForm {
+  private options: ConnectionFormOptions;
+  private turnstileEnabled = false;
+  private turnstileVerified = false;
+  private turnstileWidgetId: string | null = null;
+  private turnstileSitekey = '';
+
+  constructor(options: ConnectionFormOptions) {
+    this.options = options;
+    this.render();
+    this.loadSavedCredentials();
+    this.checkTurnstileConfig();
   }
 
-  private async init(): Promise<void> {
-    this.renderUserInfo();
-    this.bindEvents();
-    await this.fetchServers();
-
-    // 设置用户空间的版权年份
-    const yearSpan = document.getElementById('user-copyright-year');
-    if (yearSpan) yearSpan.textContent = new Date().getFullYear().toString();
-  }
-
-  // ==================== 渲染用户信息 ====================
-
-  private renderUserInfo(): void {
-    const container = document.getElementById('user-info');
-    if (!container) return;
-
-    container.innerHTML = '';
-    const img = document.createElement('img');
-    img.src = this.user.avatar_url;
-    img.alt = this.user.username;
-    img.className = 'user-avatar w-8 h-8';
-    container.appendChild(img);
-    const span = document.createElement('span');
-    span.className = 'text-xs font-bold tracking-[0.1em] text-muted';
-    span.textContent = this.user.username;
-    container.appendChild(span);
-  }
-
-  // ==================== 事件绑定 ====================
-
-  private bindEvents(): void {
-    // 退出登录
-    document.getElementById('logout-btn')?.addEventListener('click', () => this.logout());
-
-    // AI 配置
-    document.getElementById('ai-config-btn')?.addEventListener('click', () => {
-      import('./main').then(m => m.showAIConfig());
-    });
-
-    // 添加服务器按钮
-    document.getElementById('add-server-btn')?.addEventListener('click', () => this.showModal('add'));
-    document.getElementById('empty-add-btn')?.addEventListener('click', () => this.showModal('add'));
-
-    // Modal 关闭
-    document.getElementById('modal-close-btn')?.addEventListener('click', () => this.hideModal());
-    document.getElementById('modal-backdrop')?.addEventListener('click', () => this.hideModal());
-
-    // Modal 提交
-    document.getElementById('server-submit-btn')?.addEventListener('click', () => this.handleSubmit());
-
-    // Modal 认证方式切换
-    document.getElementById('modal-auth-tab-password')?.addEventListener('click', () => this.setModalAuthMode('password'));
-    document.getElementById('modal-auth-tab-key')?.addEventListener('click', () => this.setModalAuthMode('key'));
-
-    // 回车提交
-    document.getElementById('server-form')?.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        this.handleSubmit();
-      }
-    });
-  }
-
-  // ==================== 数据获取 ====================
-
-  private async fetchServers(): Promise<void> {
+  private async checkTurnstileConfig(): Promise<void> {
     try {
-      const res = await fetch('/api/servers');
-      if (!res.ok) throw new Error('Failed to fetch servers');
-      this.servers = await res.json();
-      this.renderServerGrid();
-    } catch (e) {
-      console.error('Failed to fetch servers:', e);
-      this.servers = [];
-      this.renderServerGrid();
+      const response = await fetch('/api/config');
+      const config = (await response.json()) as {
+        turnstileEnabled: boolean;
+        sitekey: string;
+        githubAuthEnabled: boolean;
+      };
+      this.turnstileEnabled = config.turnstileEnabled;
+      this.turnstileSitekey = config.sitekey;
+      if (this.turnstileEnabled && this.turnstileSitekey) {
+        this.renderTurnstile();
+      }
+      // 渲染 GitHub 登录按钮（仅当 OAuth 已配置时）
+      if (config.githubAuthEnabled) {
+        this.renderGitHubLoginButton();
+      }
+    } catch {
+      // Config endpoint not available, skip Turnstile
     }
   }
 
-  // ==================== 渲染服务器卡片 ====================
+  private renderGitHubLoginButton(): void {
+    const placeholder = document.getElementById('github-login-placeholder');
+    if (!placeholder) return;
 
-  private renderServerGrid(): void {
-    const grid = document.getElementById('server-grid');
-    const emptyState = document.getElementById('empty-state');
-    if (!grid || !emptyState) return;
+    placeholder.innerHTML = `
+      <button type="button" id="github-login-btn" class="github-login-btn text-[11px] font-bold tracking-[0.1em] text-muted hover:text-primary transition-all cursor-pointer flex items-center gap-1.5 bg-transparent border border-dim px-3 py-1 hover:border-[var(--accent)]">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        LOGIN
+      </button>
+    `;
 
-    if (this.servers.length === 0) {
-      grid.innerHTML = '';
-      emptyState.classList.remove('hidden');
-      emptyState.classList.add('flex');
-      return;
-    }
-
-    emptyState.classList.add('hidden');
-    emptyState.classList.remove('flex');
-
-    grid.innerHTML = this.servers
-      .map((server) => this.renderServerCard(server))
-      .join('');
-
-    // 绑定卡片事件
-    this.servers.forEach((server) => {
-      document.getElementById(`connect-${server.id}`)?.addEventListener('click', () => this.connectServer(server.id));
-      document.getElementById(`edit-${server.id}`)?.addEventListener('click', () => this.showModal('edit', server));
-      document.getElementById(`delete-${server.id}`)?.addEventListener('click', () => this.deleteServer(server.id));
+    document.getElementById('github-login-btn')?.addEventListener('click', () => {
+      window.location.href = '/api/auth/github';
     });
   }
 
-  private renderServerCard(server: ServerConfig): string {
-    const authIcon = server.auth_method === 'publickey' ? 'vpn_key' : 'password';
-    const authLabel = server.auth_method === 'publickey' ? 'KEY' : 'PWD';
+  private renderTurnstile(): void {
+    const container = document.getElementById('turnstile-widget');
+    if (!container || !window.turnstile) return;
 
-    // 区域信息：用户手动覆盖优先，其次系统推断，都没有则显示 Auto
-    const effectiveHint = server.region || server.inferred_hint || '';
-    const isManual = !!server.region;
-    const regionLabelText = regionLabel(effectiveHint);
-    const regionTag = effectiveHint
-      ? (isManual ? '手动' : '自动')
-      : '自动';
+    const wrapper = document.getElementById('turnstile-container');
+    if (wrapper) wrapper.style.display = 'block';
 
-    return `
-      <div class="server-card p-5 relative group" id="card-${server.id}">
-        <div class="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[var(--border-strong)] to-transparent group-hover:via-[var(--accent)] transition-all duration-300"></div>
-        
-        <div class="flex items-start justify-between mb-3">
-          <div class="flex items-center gap-2">
-            <span class="material-symbols-outlined text-primary" style="font-size: 20px; font-variation-settings: 'FILL' 0;">dns</span>
-            <h3 class="text-sm font-bold text-primary tracking-[0.05em]">${this.escapeHtml(server.name)}</h3>
-          </div>
-          <span class="text-[10px] font-bold tracking-[0.1em] text-muted border border-dim px-2 py-0.5 flex items-center gap-1">
-            <span class="material-symbols-outlined" style="font-size: 12px;">${authIcon}</span>
-            ${authLabel}
-          </span>
+    this.turnstileWidgetId = window.turnstile.render(container, {
+      sitekey: this.turnstileSitekey,
+      theme: 'dark',
+      callback: async (token: string) => {
+        // Verify with backend and get cookie
+        try {
+          const response = await fetch('/api/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token }),
+          });
+          const result = (await response.json()) as { success: boolean };
+          if (result.success) {
+            this.turnstileVerified = true;
+            // Hide Turnstile widget after successful verification
+            const wrapper = document.getElementById('turnstile-container');
+            if (wrapper) wrapper.style.display = 'none';
+          }
+        } catch {
+          this.turnstileVerified = false;
+        }
+      },
+      'expired-callback': () => {
+        this.turnstileVerified = false;
+      },
+      'error-callback': () => {
+        this.turnstileVerified = false;
+      },
+    });
+  }
+
+  private render(): void {
+  const container = document.getElementById('connection-form-container')!;
+
+  container.innerHTML = `
+
+  <div class="cloudssh-home">
+
+
+   <!-- 左侧品牌 -->
+
+<div class="cloudssh-brand">
+
+
+<h1>
+
+<span class="brand-orange">
+    唐云
+</span>
+
+<span>
+    CloudSSH
+</span>
+
+</h1>
+
+
+
+<h2>
+    安全稳定的 Web SSH 云端终端
+</h2>
+
+
+
+<p class="cloudssh-description">
+
+    无需安装客户端，<br>
+    浏览器即可安全管理 Linux 云服务器
+
+</p>
+
+
+
+
+
+<div class="cloudssh-terminal-preview">
+
+
+    <div class="terminal-header">
+
+        CloudSSH Terminal
+
+    </div>
+
+
+
+    <div class="terminal-body">
+
+
+        <div class="terminal-command">
+
+            root@cloudssh:~$ ssh server
+
         </div>
 
-        <div class="space-y-1.5 text-xs text-muted mb-4">
-          <div class="flex items-center gap-2">
-            <span class="text-dim">HOST</span>
-            <span class="text-on-surface">${this.escapeHtml(server.host)}:${server.port}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-dim">USER</span>
-            <span class="text-on-surface">${this.escapeHtml(server.username)}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-dim">REGION</span>
-            <span class="text-on-surface flex items-center gap-1">
-              <span class="material-symbols-outlined" style="font-size: 11px; color: var(--accent-secondary);">${effectiveHint ? 'my_location' : 'explore'}</span>
-              ${this.escapeHtml(regionLabelText)}
-            </span>
-            <span class="text-[9px] text-dim border border-dim px-1 py-0.5 ml-0.5">${regionTag}</span>
-          </div>
+
+        <div class="terminal-line">
+
+            > Connecting secure channel...
+
         </div>
 
-        <div class="flex gap-2 pt-3 border-t border-[var(--border)]">
-          <button id="connect-${server.id}" class="cyber-button text-primary flex-1 py-1.5 px-3 text-[10px] font-bold tracking-[0.1em] uppercase flex items-center justify-center gap-1" title="Connect">
-            <span class="material-symbols-outlined" style="font-size: 14px;">power_settings_new</span>
-            CONNECT
-          </button>
-          <button id="edit-${server.id}" class="cyber-button text-primary py-1.5 px-3 text-[10px] font-bold tracking-[0.1em] flex items-center justify-center" title="Edit">
-            <span class="material-symbols-outlined" style="font-size: 14px;">edit</span>
-          </button>
-          <button id="delete-${server.id}" class="cyber-button py-1.5 px-3 text-[10px] font-bold tracking-[0.1em] flex items-center justify-center text-error border-[var(--error)] hover:bg-[var(--error)] hover:text-[var(--bg)]" title="Delete">
-            <span class="material-symbols-outlined" style="font-size: 14px;">delete</span>
-          </button>
+
+        <div class="terminal-success">
+
+            ✓ SSH handshake completed
+
         </div>
+
+
+        <div class="terminal-success">
+
+            ✓ Terminal session ready
+
+        </div>
+
+
+        <div class="terminal-cursor">
+
+            _
+
+        </div>
+
+
+    </div>
+
+
+</div>
+<!-- cloudssh-terminal-preview -->
+
+<div class="cloudssh-status-panel">
+
+    <div>
+        <span>🟢</span>
+        Service Online
+    </div>
+
+    <div>
+        <span>🔒</span>
+        Secure Channel
+    </div>
+
+    <div>
+        <span>⚡</span>
+        Low Latency
+    </div>
+
+</div>
+
+
+
+
+
+<div class="cloudssh-features">
+
+
+    <span>
+        🛡 企业级安全认证
+    </span>
+
+
+    <span>
+        🔑 SSH 密钥登录
+    </span>
+
+
+    <span>
+        ⚡ Web 在线终端
+    </span>
+
+
+</div>
+
+
+
+</div>
+<!-- cloudssh-brand -->
+
+
+<!-- 右侧卡片 -->
+
+
+
+    <!-- 右侧卡片 -->
+
+
+    <div class="cloudssh-card">
+
+
+      <div class="cloudssh-card-header">
+
+
+        <h3>
+          连接服务器
+        </h3>
+
+
+        <p>
+          创建新的 SSH 会话
+        </p>
+
+
       </div>
-    `;
-  }
 
-  // ==================== 服务器操作 ====================
 
-  private async connectServer(serverId: number): Promise<void> {
-    const server = this.servers.find((s) => s.id === serverId);
-    if (!server) return;
 
-    const connectBtn = document.getElementById(`connect-${serverId}`);
-    if (connectBtn) {
-      connectBtn.innerHTML = `
-        <span class="material-symbols-outlined animate-spin" style="font-size: 14px;">progress_activity</span>
-        CONNECTING...
-      `;
-      (connectBtn as HTMLButtonElement).disabled = true;
+      <form id="connection-form">
+
+
+
+        <!-- 地址 + 端口 -->
+
+
+        <div class="cloudssh-field-row">
+
+
+
+          <div class="cloudssh-field">
+
+
+            <label>
+              服务器地址
+            </label>
+
+
+            <div class="cloudssh-input-box">
+
+              <span>
+                🌐
+              </span>
+
+
+              <input
+                id="host"
+                class="terminal-input"
+                placeholder="服务器 IP 或域名"
+                type="text"
+                required
+              >
+
+
+            </div>
+
+
+          </div>
+
+
+
+
+          <div class="cloudssh-field port-field">
+
+
+            <label>
+              SSH端口
+            </label>
+
+
+            <div class="cloudssh-input-box">
+
+
+              <span>
+                :
+              </span>
+
+
+              <input
+                id="port"
+                class="terminal-input"
+                value="22"
+                placeholder="22"
+                type="text"
+              >
+
+
+            </div>
+
+
+          </div>
+
+
+
+        </div>
+
+
+
+
+
+        <!-- 用户名 -->
+
+
+        <div class="cloudssh-field">
+
+
+          <label>
+            登录用户名
+          </label>
+
+
+
+          <div class="cloudssh-input-box">
+
+
+            <span>
+              👤
+            </span>
+
+
+
+            <input
+              id="username"
+              class="terminal-input"
+              value="root"
+              placeholder="root"
+              type="text"
+              required
+            >
+
+
+          </div>
+
+
+        </div>
+          <!-- 认证方式 -->
+
+
+        <div class="cloudssh-field">
+
+
+          <label>
+            认证方式
+          </label>
+
+
+
+          <div class="cloudssh-auth-tabs">
+
+
+            <button
+              type="button"
+              id="auth-tab-password"
+              class="auth-tab auth-tab-active"
+            >
+              密码登录
+            </button>
+
+
+
+            <button
+              type="button"
+              id="auth-tab-key"
+              class="auth-tab"
+            >
+              SSH密钥
+            </button>
+
+
+          </div>
+
+
+
+
+
+          <!-- 密码 -->
+
+
+          <div id="auth-password-section">
+
+
+            <div class="cloudssh-input-box">
+
+
+              <span>
+                🔑
+              </span>
+
+
+
+              <input
+                id="password"
+                class="terminal-input"
+                type="password"
+                placeholder="请输入服务器密码"
+              >
+
+
+            </div>
+
+
+          </div>
+
+
+
+
+
+
+          <!-- 私钥 -->
+
+
+          <div
+            id="auth-key-section"
+            style="display:none;"
+          >
+
+
+            <textarea
+              id="private-key"
+              class="terminal-input"
+              rows="5"
+              placeholder="粘贴 SSH 私钥内容"
+            ></textarea>
+
+
+
+            <div class="cloudssh-file-box">
+
+
+              <label
+                for="private-key-file"
+                class="cloudssh-file-button"
+              >
+
+                📂 选择密钥文件
+
+              </label>
+
+
+
+              <input
+                type="file"
+                id="private-key-file"
+                accept=".pem,.key,.txt"
+                class="hidden"
+              >
+
+
+
+              <span
+                id="file-name"
+              ></span>
+
+
+            </div>
+
+
+          </div>
+
+
+        </div>
+
+
+
+
+
+
+        <!-- Turnstile -->
+
+
+        <div
+          id="turnstile-container"
+          style="display:none;"
+        >
+
+          <div
+            id="turnstile-widget"
+          ></div>
+
+
+        </div>
+
+
+
+
+
+
+
+        <!-- 区域 -->
+
+
+        <div class="cloudssh-field">
+
+
+          <label>
+            节点区域
+            <span class="cloudssh-tip">
+              (可选)
+            </span>
+          </label>
+
+
+
+          <select
+            id="anon-region"
+            class="terminal-input"
+          >
+
+            <option value="">
+              自动选择
+            </option>
+
+
+          </select>
+
+
+        </div>
+
+
+
+
+
+
+
+        <!-- 保存 -->
+
+
+        <div class="cloudssh-remember">
+
+
+          <input
+            type="checkbox"
+            id="remember-me"
+          >
+
+
+
+          <label for="remember-me">
+
+            保存连接信息
+
+          </label>
+
+
+        </div>
+
+
+
+
+
+
+
+        <!-- 按钮 -->
+
+
+        <button
+          id="connect-btn"
+          type="button"
+          class="connect-btn"
+        >
+
+          ⚡ 连接服务器
+
+        </button>
+
+        <div id="connection-error" class="cloudssh-error"></div>
+
+
+
+
+
+
+
+        <!-- 状态 -->
+
+
+        <div class="cloudssh-status">
+
+
+          <span id="status-text">
+
+            <span class="status-dot"></span>
+
+            STATUS: OFFLINE
+
+          </span>
+
+
+
+          <span
+            id="github-login-placeholder"
+          ></span>
+
+
+        </div>
+
+
+
+      </form>
+
+
+    </div>
+
+
+  </div>
+
+`;
+
+
+
+
+
+// ==========================
+// 事件绑定
+// ==========================
+
+
+document
+  .getElementById('connect-btn')!
+  .addEventListener('click', () => {
+
+    this.handleConnect();
+
+  });
+
+
+
+
+
+document
+  .getElementById('connection-form')!
+  .addEventListener('keypress', (e) => {
+
+
+    if (e.key === 'Enter') {
+
+      this.handleConnect();
+
     }
 
-    try {
-      const res = await fetch(`/api/servers/${serverId}/connect`, {
-        method: 'POST',
-      });
 
-      if (!res.ok) {
-        const ct = res.headers.get('content-type') || '';
-        if (ct.includes('application/json')) {
-          const err = await res.json() as { error?: string };
-          throw new Error(err.error || 'Connection failed');
-        }
-        throw new Error(`服务器错误 (${res.status})`);
-      }
+  });
 
-      const { wsUrl } = await res.json() as { wsUrl: string };
 
-      // 在当前页面内创建新标签并连接
-      this.onConnect(wsUrl, server.name, { host: server.host, port: server.port });
-    } catch (e) {
-      alert(`连接失败: ${e instanceof Error ? e.message : String(e)}`);
-    } finally {
-      if (connectBtn) {
-        connectBtn.innerHTML = `
-          <span class="material-symbols-outlined" style="font-size: 14px;">power_settings_new</span>
-          CONNECT
-        `;
-        (connectBtn as HTMLButtonElement).disabled = false;
-      }
-    }
-  }
 
-  private async deleteServer(serverId: number): Promise<void> {
-    const server = this.servers.find((s) => s.id === serverId);
-    if (!server) return;
 
-    if (!confirm(`确认删除服务器 "${server.name}" ?`)) return;
 
-    try {
-      const card = document.getElementById(`card-${serverId}`);
-      if (card) card.classList.add('removing');
+// 区域初始化
 
-      const res = await fetch(`/api/servers/${serverId}`, {
-        method: 'DELETE',
-      });
+const regionSelect = document.getElementById('anon-region') as HTMLSelectElement | null;
 
-      if (!res.ok) throw new Error('Delete failed');
 
-      // 等待动画完成后移除
-      await new Promise((r) => setTimeout(r, 300));
-      this.servers = this.servers.filter((s) => s.id !== serverId);
-      this.renderServerGrid();
-    } catch (e) {
-      alert(`删除失败: ${e instanceof Error ? e.message : String(e)}`);
-      await this.fetchServers();
-    }
-  }
+if (regionSelect) {
 
-  // ==================== Modal 操作 ====================
+  populateRegionSelect(
+    regionSelect,
+    ''
+  );
 
-  showModal(mode: 'add' | 'edit', server?: ServerConfig): void {
-    this.editingServerId = mode === 'edit' && server ? server.id : null;
+}
 
-    const modal = document.getElementById('server-modal');
-    const title = document.getElementById('modal-title');
-    const submitBtn = document.getElementById('server-submit-btn');
-    if (!modal || !title || !submitBtn) return;
 
-    title.textContent = mode === 'add' ? 'ADD_SERVER' : 'EDIT_SERVER';
-    submitBtn.innerHTML = `
-      <span class="material-symbols-outlined" style="font-size: 18px;">save</span>
-      ${mode === 'add' ? 'SAVE_SERVER' : 'UPDATE_SERVER'}
-    `;
 
-    // 填充表单
-    if (mode === 'edit' && server) {
-      (document.getElementById('server-name') as HTMLInputElement).value = server.name;
-      (document.getElementById('server-host') as HTMLInputElement).value = server.host;
-      (document.getElementById('server-port') as HTMLInputElement).value = server.port.toString();
-      (document.getElementById('server-username') as HTMLInputElement).value = server.username;
-      (document.getElementById('server-password') as HTMLInputElement).value = '';
-      (document.getElementById('server-private-key') as HTMLTextAreaElement).value = '';
 
-      if (server.auth_method === 'publickey') {
-        this.setModalAuthMode('key');
-      } else {
-        this.setModalAuthMode('password');
-      }
 
-      // 区域下拉：回显用户保存的 region（"" = Auto）
-      const regionSelect = document.getElementById('server-region') as HTMLSelectElement | null;
-      const inferredInfo = document.getElementById('server-region-inferred');
-      if (regionSelect) {
-        populateRegionSelect(regionSelect, server.region || '');
-      }
-      // 显示系统推断值（仅编辑时，让用户了解 DB 持久化的 hint）
-      if (inferredInfo) {
-        if (server.inferred_hint) {
-          inferredInfo.textContent = `系统推断：${regionLabel(server.inferred_hint)}`;
-        } else {
-          inferredInfo.textContent = '';
-        }
-      }
-    } else {
-      // 清空表单
-      (document.getElementById('server-name') as HTMLInputElement).value = '';
-      (document.getElementById('server-host') as HTMLInputElement).value = '';
-      (document.getElementById('server-port') as HTMLInputElement).value = '22';
-      (document.getElementById('server-username') as HTMLInputElement).value = '';
-      (document.getElementById('server-password') as HTMLInputElement).value = '';
-      (document.getElementById('server-private-key') as HTMLTextAreaElement).value = '';
-      this.setModalAuthMode('password');
 
-      // 新增时：region 默认 Auto，无系统推断可显示
-      const regionSelect = document.getElementById('server-region') as HTMLSelectElement | null;
-      const inferredInfo = document.getElementById('server-region-inferred');
-      if (regionSelect) populateRegionSelect(regionSelect, '');
-      if (inferredInfo) inferredInfo.textContent = '';
+// 登录方式切换
+
+
+document
+  .getElementById('auth-tab-password')!
+  .addEventListener('click', () => {
+
+    this.setAuthMode('password');
+
+  });
+
+
+
+
+
+document
+  .getElementById('auth-tab-key')!
+  .addEventListener('click', () => {
+
+    this.setAuthMode('key');
+
+  });
+
+
+
+
+
+// 私钥上传
+
+
+const fileInput =
+  document.getElementById(
+    'private-key-file'
+  ) as HTMLInputElement;
+
+
+
+const fileName =
+  document.getElementById(
+    'file-name'
+  );
+
+
+
+fileInput?.addEventListener(
+  'change',
+  async (event) => {
+
+
+    const file =
+      (event.target as HTMLInputElement)
+      .files?.[0];
+
+
+    if (!file) return;
+
+
+    const text =
+      await file.text();
+
+
+    const keyArea =
+      document.getElementById(
+        'private-key'
+      ) as HTMLTextAreaElement;
+
+
+    keyArea.value = text;
+
+
+    if (fileName) {
+
+      fileName.textContent =
+        file.name;
+
     }
 
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
 
-    // 聚焦第一个输入框
-    setTimeout(() => {
-      (document.getElementById('server-name') as HTMLInputElement)?.focus();
-    }, 100);
+    fileInput.value = '';
+
   }
 
-  hideModal(): void {
-    const modal = document.getElementById('server-modal');
-    if (modal) {
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-    }
-    this.editingServerId = null;
-  }
+);
 
-  private setModalAuthMode(mode: 'password' | 'key'): void {
-    this.modalAuthMode = mode;
-    const pwTab = document.getElementById('modal-auth-tab-password')!;
-    const keyTab = document.getElementById('modal-auth-tab-key')!;
-    const pwSection = document.getElementById('modal-password-section')!;
-    const keySection = document.getElementById('modal-key-section')!;
+
+// render结束
+}
+
+private authMode: 'password' | 'key' = 'password';
+
+  private setAuthMode(mode: 'password' | 'key'): void {
+    this.authMode = mode;
+    const pwTab = document.getElementById('auth-tab-password')!;
+    const keyTab = document.getElementById('auth-tab-key')!;
+    const pwSection = document.getElementById('auth-password-section')!;
+    const keySection = document.getElementById('auth-key-section')!;
 
     pwTab.classList.toggle('auth-tab-active', mode === 'password');
     keyTab.classList.toggle('auth-tab-active', mode === 'key');
@@ -377,197 +863,298 @@ export class ServerList {
     keySection.style.display = mode === 'key' ? '' : 'none';
   }
 
-  private async handleSubmit(): Promise<void> {
-    const name = (document.getElementById('server-name') as HTMLInputElement).value.trim();
-    const host = (document.getElementById('server-host') as HTMLInputElement).value.trim();
-    const port = parseInt((document.getElementById('server-port') as HTMLInputElement).value || '22');
-    const username = (document.getElementById('server-username') as HTMLInputElement).value.trim();
-    const password = (document.getElementById('server-password') as HTMLInputElement).value;
-    const privateKey = (document.getElementById('server-private-key') as HTMLTextAreaElement).value;
+  private renderRecentConnections(): void {
+    const section = document.getElementById('recent-connections-section');
+    const list = document.getElementById('recent-connections-list');
+    if (!section || !list) return;
 
-    if (!name || !host || !username) {
-      alert('请填写服务器名称、主机和用户名');
-      return;
-    }
-
-    const authMethod = this.modalAuthMode === 'key' ? 'publickey' : 'password';
-    const credential = authMethod === 'publickey' ? privateKey : password;
-
-    // 新增时必须填写凭据，编辑时可选
-    if (!this.editingServerId && !credential) {
-      alert(authMethod === 'publickey' ? '请粘贴私钥内容' : '请输入密码');
-      return;
-    }
-
-    const submitBtn = document.getElementById('server-submit-btn') as HTMLButtonElement;
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = `
-      <span class="material-symbols-outlined animate-spin" style="font-size: 18px;">progress_activity</span>
-      SAVING...
-    `;
-
+    const raw = localStorage.getItem('cloudssh_recent_connections');
+    let recent: any[] = [];
     try {
-      const body: any = { name, host, port, username, auth_method: authMethod };
-      if (credential) body.credential = credential;
-
-      // 区域偏好：空字符串表示 Auto（让系统自动推断）
-      const regionSelect = document.getElementById('server-region') as HTMLSelectElement | null;
-      if (regionSelect) {
-        body.region = regionSelect.value || '';
-      }
-
-      // 保存请求（后端在保存时会同步推断 locationHint，故时间可能略长）
-      let res: Response;
-      if (this.editingServerId) {
-        res = await fetch(`/api/servers/${this.editingServerId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-      } else {
-        res = await fetch('/api/servers', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-      }
-
-      if (!res.ok) {
-        const err = await res.json() as { error?: string };
-        throw new Error(err.error || 'Save failed');
-      }
-
-      const responseData = await res.json() as any;
-
-      // DEBUG_MODE 时，响应中包含 _debug 字段：显示完整调试日志
-      if (responseData._debug && Array.isArray(responseData._debug)) {
-        console.log('[locationHint 调试信息]');
-        responseData._debug.forEach((msg: string) => console.log(msg));
-        this.showDebugNotification(responseData._debug);
-      }
-
-      // 非调试模式：用简短 toast 提示推断结果，让用户知道区域调度已生效
-      // POST 与 PUT 路径后端均会返回最新记录（含 inferred_hint 字段）
-      if (!responseData._debug) {
-        const inferred = responseData.inferred_hint || null;
-        const userRegion = body.region || null;
-        if (userRegion || inferred) {
-          // 用户手动指定优先显示手动值，否则显示系统推断值
-          const hint = userRegion || inferred;
-          this.showToast(`已保存，区域：${regionLabel(hint)}`, false);
-        } else {
-          // 推断失败（私网 IP / 限流 / 未命中映射表）
-          this.showToast('已保存，未能推断区域（将使用自动调度）', true);
-        }
-      }
-
-      this.hideModal();
-      await this.fetchServers();
-    } catch (e) {
-      alert(`保存失败: ${e instanceof Error ? e.message : String(e)}`);
-    } finally {
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = `
-        <span class="material-symbols-outlined" style="font-size: 18px;">save</span>
-        ${this.editingServerId ? 'UPDATE_SERVER' : 'SAVE_SERVER'}
-      `;
-    }
-  }
-
-  // ==================== 保存反馈 toast ====================
-
-  /**
-   * 右下角简短提示气泡。warn=true 用青色表示异常场景，否则用主题绿表示正常保存。
-   * 与 DEBUG_MODE 的详细 showDebugNotification 互斥使用。
-   */
-  private showToast(text: string, warn = false): void {
-    const notification = document.createElement('div');
-    const accentColor = warn ? 'var(--accent-secondary)' : 'var(--accent)';
-    notification.className = 'fixed bottom-4 right-4 z-[200] max-w-sm p-3 px-4 rounded-lg shadow-2xl border bg-[var(--bg-surface)] text-[var(--text)] font-mono text-[11px] flex items-center gap-2';
-    notification.style.borderColor = accentColor;
-    notification.style.opacity = '0';
-    notification.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-    notification.style.transform = 'translateY(8px)';
-
-    const icon = document.createElement('span');
-    icon.className = 'material-symbols-outlined';
-    icon.style.fontSize = '16px';
-    icon.style.color = accentColor;
-    icon.textContent = warn ? 'warning' : 'check_circle';
-    notification.appendChild(icon);
-
-    const label = document.createElement('span');
-    label.className = 'text-on-surface';
-    label.textContent = text;
-    notification.appendChild(label);
-
-    document.body.appendChild(notification);
-    // 入场动画
-    requestAnimationFrame(() => {
-      notification.style.opacity = '1';
-      notification.style.transform = 'translateY(0)';
-    });
-    // 4 秒后淡出
-    setTimeout(() => {
-      notification.style.opacity = '0';
-      notification.style.transform = 'translateY(8px)';
-      setTimeout(() => notification.remove(), 300);
-    }, 4000);
-  }
-
-  // ==================== DEBUG 通知 ====================
-
-  private showDebugNotification(debugLines: string[]): void {
-    // 创建通知元素
-    const notification = document.createElement('div');
-    notification.className = 'fixed bottom-4 right-4 z-[200] max-w-md p-4 rounded-lg shadow-2xl border border-[var(--accent)] bg-[var(--bg-surface)] text-[var(--text)] font-mono text-[11px] leading-relaxed custom-scrollbar';
-    notification.style.maxHeight = '300px';
-    notification.style.overflowY = 'auto';
-
-    const title = document.createElement('div');
-    title.className = 'text-[var(--accent)] font-bold mb-2 text-xs';
-    title.textContent = '[locationHint 调试信息]';
-    notification.appendChild(title);
-
-    const content = document.createElement('div');
-    content.className = 'text-muted whitespace-pre-wrap';
-    content.textContent = debugLines.join('\n');
-    notification.appendChild(content);
-
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'absolute top-2 right-2 text-muted hover:text-[var(--accent)] cursor-pointer';
-    closeBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 16px;">close</span>';
-    closeBtn.onclick = () => notification.remove();
-    notification.appendChild(closeBtn);
-
-    document.body.appendChild(notification);
-
-    // 8 秒后自动消失
-    setTimeout(() => {
-      if (notification.parentNode) {
-        notification.style.transition = 'opacity 0.3s';
-        notification.style.opacity = '0';
-        setTimeout(() => notification.remove(), 300);
-      }
-    }, 8000);
-  }
-
-  // ==================== 退出登录 ====================
-
-  private async logout(): Promise<void> {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      recent = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(recent)) recent = [];
     } catch {
-      // 即使请求失败也清除本地状态
+      recent = [];
     }
-    this.onLogout();
+
+    if (recent.length === 0) {
+      section.classList.add('hidden');
+      return;
+    }
+
+    section.classList.remove('hidden');
+    list.innerHTML = '';
+
+    recent.forEach((item, index) => {
+      const itemEl = document.createElement('div');
+      itemEl.className = 'flex justify-between items-center text-xs p-2 border border-dim bg-surface/50 hover:bg-surface hover:border-[var(--accent)] transition-all cursor-pointer group relative';
+      
+      const authLabel = item.authMethod === 'publickey' ? 'KEY' : 'PWD';
+      const labelText = `${item.username}@${item.host}:${item.port}`;
+
+      itemEl.innerHTML = `
+        <div class="flex items-center gap-2 overflow-hidden mr-2 select-none flex-1">
+          <span class="material-symbols-outlined text-muted" style="font-size: 14px;">history</span>
+          <span class="text-on-surface truncate" title="${labelText}">${labelText}</span>
+          <span class="text-[9px] font-bold tracking-[0.05em] text-muted border border-dim px-1.5 py-0.2 shrink-0">${authLabel}</span>
+        </div>
+        <button class="delete-history-btn text-muted hover:text-error flex items-center justify-center p-0.5" title="Remove from history">
+          <span class="material-symbols-outlined" style="font-size: 14px;">close</span>
+        </button>
+      `;
+
+      // 点击填入
+      itemEl.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).closest('.delete-history-btn')) return;
+        this.fillConnection(item);
+      });
+
+      // 删除单条
+      itemEl.querySelector('.delete-history-btn')!.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.deleteConnection(index);
+      });
+
+      list.appendChild(itemEl);
+    });
   }
 
-  // ==================== 工具函数 ====================
+  private async fillConnection(item: { host: string; port: number; username: string; authMethod: 'password' | 'publickey'; encryptedCred?: string; region?: string }): Promise<void> {
+    (document.getElementById('host') as HTMLInputElement).value = item.host || '';
+    (document.getElementById('port') as HTMLInputElement).value = (item.port || 22).toString();
+    (document.getElementById('username') as HTMLInputElement).value = item.username || '';
 
-  private escapeHtml(text: string): string {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    // 还原区域下拉（从 recent connection 的 region 字段；老条目无此字段则默认 Auto）
+    const anonRegionSelect = document.getElementById('anon-region') as HTMLSelectElement | null;
+    if (anonRegionSelect) {
+      anonRegionSelect.value = item.region || '';
+    }
+
+    if (item.authMethod === 'publickey') {
+      this.setAuthMode('key');
+    } else {
+      this.setAuthMode('password');
+    }
+
+    if (item.encryptedCred) {
+      const cred = await decryptCredentials(item.encryptedCred);
+      if (cred) {
+        (document.getElementById('password') as HTMLInputElement).value = cred.password || '';
+        (document.getElementById('private-key') as HTMLTextAreaElement).value = cred.privateKey || '';
+        (document.getElementById('remember-me') as HTMLInputElement).checked = true;
+      } else {
+        (document.getElementById('password') as HTMLInputElement).value = '';
+        (document.getElementById('private-key') as HTMLTextAreaElement).value = '';
+        (document.getElementById('remember-me') as HTMLInputElement).checked = false;
+      }
+    } else {
+      (document.getElementById('password') as HTMLInputElement).value = '';
+      (document.getElementById('private-key') as HTMLTextAreaElement).value = '';
+      (document.getElementById('remember-me') as HTMLInputElement).checked = false;
+    }
+  }
+
+  private deleteConnection(index: number): void {
+    const raw = localStorage.getItem('cloudssh_recent_connections');
+    let recent: any[] = [];
+    try {
+      recent = raw ? JSON.parse(raw) : [];
+    } catch {}
+    
+    if (index >= 0 && index < recent.length) {
+      recent.splice(index, 1);
+      localStorage.setItem('cloudssh_recent_connections', JSON.stringify(recent));
+      this.renderRecentConnections();
+    }
+  }
+
+  private async loadSavedCredentials(): Promise<void> {
+    const recentRaw = localStorage.getItem('cloudssh_recent_connections');
+    let recent: any[] = [];
+    try {
+      recent = recentRaw ? JSON.parse(recentRaw) : [];
+      if (!Array.isArray(recent)) recent = [];
+    } catch {
+      recent = [];
+    }
+
+    // 兼容性迁移：如果无 recent_connections 但存在老版单条 cloudssh_cred，则自动将其迁移并存入历史记录
+    const oldCred = localStorage.getItem('cloudssh_cred');
+    if (recent.length === 0 && oldCred) {
+      const cred = await decryptCredentials(oldCred);
+      if (cred) {
+        const item = {
+          id: `${cred.username}@${cred.host}:${cred.port}`,
+          host: cred.host,
+          port: parseInt(cred.port) || 22,
+          username: cred.username,
+          authMethod: cred.authMethod === 'publickey' ? 'publickey' : 'password',
+          timestamp: Date.now(),
+          encryptedCred: oldCred,
+        };
+        recent.push(item);
+        localStorage.setItem('cloudssh_recent_connections', JSON.stringify(recent));
+        // 清理老旧单项
+        localStorage.removeItem('cloudssh_cred');
+      }
+    }
+
+    // 渲染历史列表
+    this.renderRecentConnections();
+
+    // 默认自动填入最近使用的一条（即第一条）
+    if (recent.length > 0) {
+      this.fillConnection(recent[0]);
+    }
+  }
+
+  private showError(message: string): void {
+
+  const box =
+    document.getElementById('connection-error');
+
+  if (box) {
+
+    box.textContent = message;
+
+  }
+
+}
+
+  private async handleConnect(): Promise<void> {
+    const hostInput = (document.getElementById('host') as HTMLInputElement).value;
+    const host = hostInput.replace(/^\[|\]$/g, '').trim();
+    const port = parseInt(
+      (document.getElementById('port') as HTMLInputElement).value || '22'
+    );
+    const username = (document.getElementById('username') as HTMLInputElement).value;
+    const password = (document.getElementById('password') as HTMLInputElement).value;
+    const privateKey = (document.getElementById('private-key') as HTMLTextAreaElement).value;
+    const remember = (document.getElementById('remember-me') as HTMLInputElement).checked;
+    // 匿名路径区域选择（仅作为 manual override；系统不会对此路径自动推断）
+    const anonRegionSelect = document.getElementById('anon-region') as HTMLSelectElement | null;
+    const regionValue = anonRegionSelect ? anonRegionSelect.value : '';
+
+    if (!host || !username) {
+
+    this.showError(
+        '请输入主机地址和用户名'
+    );
+
+    return;
+
+}
+
+
+if (this.authMode === 'password' && !password) {
+
+    this.showError(
+        '请输入服务器密码'
+    );
+
+    return;
+
+}
+
+
+if (this.authMode === 'key' && !privateKey) {
+
+    this.showError(
+        '请粘贴 SSH 私钥内容'
+    );
+
+    return;
+
+}
+
+    // Check Turnstile if enabled
+    if (this.turnstileEnabled && !this.turnstileVerified) {
+
+  this.showError(
+    '请完成人机验证'
+  );
+
+  return;
+
+}
+    // 保存连接历史与凭据
+    let encryptedCred: string | undefined = undefined;
+    if (remember) {
+      encryptedCred = await encryptCredentials({
+        host,
+        port: port.toString(),
+        username,
+        password,
+        privateKey: this.authMode === 'key' ? privateKey : undefined,
+        authMethod: this.authMode === 'key' ? 'publickey' : 'password',
+      });
+    }
+
+    // 更新最近连接列表
+    const recentRaw = localStorage.getItem('cloudssh_recent_connections');
+    let recent: any[] = [];
+    try {
+      recent = recentRaw ? JSON.parse(recentRaw) : [];
+      if (!Array.isArray(recent)) recent = [];
+    } catch {}
+
+    const id = `${username}@${host}:${port}`;
+    const newRecord = {
+      id,
+      host,
+      port,
+      username,
+      authMethod: this.authMode === 'key' ? 'publickey' : 'password',
+      timestamp: Date.now(),
+      ...(regionValue ? { region: regionValue } : {}),   // 区域偏好持久化到 recent
+      ...(encryptedCred ? { encryptedCred } : {}),
+    };
+
+    // 去重：如果已有相同 id 记录，先删除
+    recent = recent.filter(r => r.id !== id);
+    // 插入头部
+    recent.unshift(newRecord);
+    // 限制最近 5 条
+    if (recent.length > 5) {
+      recent = recent.slice(0, 5);
+    }
+    localStorage.setItem('cloudssh_recent_connections', JSON.stringify(recent));
+
+    // 重新渲染历史列表
+    this.renderRecentConnections();
+
+    // 通过 TabManager 创建新标签并切换到终端视图
+    const tm = this.options.getTabManager();
+    const displayLabel = `${username}@${host}`;
+
+    // 切换到终端视图
+    document.getElementById('auth-section')!.classList.add('hidden');
+    document.getElementById('terminal-section')!.classList.remove('hidden');
+    document.getElementById('terminal-section')!.classList.add('flex');
+
+    const tab = tm.createTab(displayLabel, { host, port, username });
+    const terminal = tab.terminal;
+
+    terminal.mount();
+
+    try {
+      // 加载已知主机指纹（TOFU 验证）
+      const expectedFingerprint = await loadKnownFingerprint(host, port);
+
+      await terminal.connect({
+        host,
+        port,
+        username,
+        password,
+        authMethod: this.authMode === 'key' ? 'publickey' : 'password',
+        privateKey,
+        expectedFingerprint: expectedFingerprint || undefined,
+        locationHint: regionValue || undefined,
+      });
+    } catch (error) {
+      // 连接失败时关闭该标签
+      tm.closeTab(tab.id);
+      document.getElementById('status-text')!.innerHTML = '<span class="w-2 h-2 bg-surface-dot inline-block"></span> STATUS: OFFLINE';
+    }
   }
 }

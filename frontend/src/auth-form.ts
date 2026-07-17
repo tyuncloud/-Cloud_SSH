@@ -659,6 +659,8 @@ export class ConnectionForm {
 
         </button>
 
+        <div id="connection-error" class="cloudssh-error"></div>
+
 
 
 
@@ -1006,6 +1008,19 @@ private authMode: 'password' | 'key' = 'password';
     }
   }
 
+  private showError(message: string): void {
+
+  const box =
+    document.getElementById('connection-error');
+
+  if (box) {
+
+    box.textContent = message;
+
+  }
+
+}
+
   private async handleConnect(): Promise<void> {
     const hostInput = (document.getElementById('host') as HTMLInputElement).value;
     const host = hostInput.replace(/^\[|\]$/g, '').trim();
@@ -1021,26 +1036,47 @@ private authMode: 'password' | 'key' = 'password';
     const regionValue = anonRegionSelect ? anonRegionSelect.value : '';
 
     if (!host || !username) {
-      alert('请填写主机名和用户名');
-      return;
-    }
 
-    if (this.authMode === 'password' && !password) {
-      alert('请输入密码');
-      return;
-    }
+    this.showError(
+        '请输入主机地址和用户名'
+    );
 
-    if (this.authMode === 'key' && !privateKey) {
-      alert('请粘贴私钥内容');
-      return;
-    }
+    return;
+
+}
+
+
+if (this.authMode === 'password' && !password) {
+
+    this.showError(
+        '请输入服务器密码'
+    );
+
+    return;
+
+}
+
+
+if (this.authMode === 'key' && !privateKey) {
+
+    this.showError(
+        '请粘贴 SSH 私钥内容'
+    );
+
+    return;
+
+}
 
     // Check Turnstile if enabled
     if (this.turnstileEnabled && !this.turnstileVerified) {
-      alert('请完成人机验证');
-      return;
-    }
 
+  this.showError(
+    '请完成人机验证'
+  );
+
+  return;
+
+}
     // 保存连接历史与凭据
     let encryptedCred: string | undefined = undefined;
     if (remember) {

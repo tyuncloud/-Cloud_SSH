@@ -58,7 +58,18 @@ export const THEMES = {
     cursorAccent: '#282828',
     selectionBackground: '#504945',
   },
-
+  
+  cloudssh: {
+   '--bg': '#fffaf5',
+   '--bg-surface': '#ffffff',
+   '--bg-elevated': '#ffffff',
+   '--bg-terminal': '#fffaf5',
+   '--text': '#1f2937',
+   '--text-muted': '#6b7280',
+   '--text-dim': '#9ca3af',
+   '--accent': '#f97316',
+   '--accent-secondary': '#fb923c',
+ }
 };
 
 export const UI_THEMES: Record<keyof typeof THEMES, Record<string, string>> = {
@@ -515,19 +526,15 @@ private initMobileCommandPanel(): void {
 
     const wsUrl = new URL(window.location.href);
 
-   if (import.meta.env.DEV) {
-    wsUrl.protocol = 'wss:';
-    wsUrl.host = 'cloudssh-worker.xcyunidc.workers.dev';
-    } else {
-    wsUrl.protocol = wsUrl.protocol === 'https:' ? 'wss:' : 'ws:';
-    }
+      wsUrl.protocol = wsUrl.protocol === 'https:' ? 'wss:' : 'ws:';
 
-wsUrl.pathname = '/api/ssh';
-    // 匿名路径：用户在前端选定 region 后作为 URL query 传给 Worker；
-    // Worker 在 get() 前读取并传入 locationHint（仅手动覆盖路径）
-    if (config.locationHint) {
-      wsUrl.searchParams.set('region', config.locationHint);
-    }
+      wsUrl.pathname = '/api/ssh';
+
+     // 匿名路径：用户在前端选定 region 后作为 URL query 传给 Worker
+     // Worker 在 get() 前读取并传入 locationHint（仅手动覆盖路径）
+   if (config.locationHint) {
+       wsUrl.searchParams.set('region', config.locationHint);
+  }
 
     return new Promise((resolve, reject) => {
       this.ws = new WebSocket(wsUrl.toString());

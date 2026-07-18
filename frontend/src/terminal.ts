@@ -24,7 +24,17 @@ interface ConnectOptions {
   resetDisplay?: boolean;
 }
 
+
 export const THEMES = {
+
+  cloudssh: {
+   background: '#fffaf5',
+   foreground: '#475569',
+   cursor: '#ff8800',
+   cursorAccent: '#fffaf5',
+   selectionBackground: '#fed7aa',
+  },
+
   cyberpunk: {
     background: '#0a0a0a',
     foreground: '#4af626',
@@ -32,20 +42,23 @@ export const THEMES = {
     cursorAccent: '#0a0a0a',
     selectionBackground: '#273747',
   },
+
   glacier: {
     background: '#0a192f',
     foreground: '#64ffda',
-    cursor: '#e6f1ff',
+    cursor: '#ef6fff',
     cursorAccent: '#0a192f',
     selectionBackground: '#112240',
   },
+
   gruvbox: {
     background: '#282828',
     foreground: '#ebdbb2',
     cursor: '#d3869b',
     cursorAccent: '#282828',
     selectionBackground: '#504945',
-  }
+  },
+
 };
 
 export const UI_THEMES: Record<keyof typeof THEMES, Record<string, string>> = {
@@ -142,6 +155,8 @@ export class SSHTerminal {
   private searchAddon: SearchAddon;
   private ws: WebSocket | null = null;
   private container: HTMLElement;
+  private mobileCommandInput: HTMLInputElement | null = null;
+  private mobileCommandSendBtn: HTMLElement | null = null;
   private disposables: { dispose(): void }[] = [];
   private terminalDisposables: { dispose(): void }[] = [];
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
@@ -174,9 +189,9 @@ export class SSHTerminal {
     this.terminal = new Terminal({
       cursorBlink: true,
       cursorStyle: 'block',
-      fontSize: 14,
+      fontSize: 13,
       fontFamily: '"JetBrains Mono", "Fira Code", "Cascadia Code", monospace',
-      theme: THEMES.cyberpunk,
+      theme: THEMES.cloudssh,
       allowProposedApi: true,
       scrollback: 10000,
     });
@@ -293,6 +308,7 @@ export class SSHTerminal {
     }
 
     this.terminal.open(this.container);
+    this.initMobileCommandPanel();
     this.mounted = true;
     
     // Load WebGL addon after terminal is opened
@@ -308,7 +324,74 @@ export class SSHTerminal {
     }
 
     this.fit();
+
+
+ }
+
+   
+
+
+
+
+// 手机命令输入
+
+private initMobileCommandPanel(): void {
+
+  const input = document.getElementById('mobile-command-input') as HTMLInputElement | null;
+
+
+  const button = document.getElementById('mobile-command-send');
+
+
+  if (!input || !button) {
+    return;
   }
+
+
+  const sendCommand = () => {
+
+    const command = input.value;
+
+
+    if (!command.trim()) {
+        return;
+    }
+
+
+    this.sendWebSocketMessage(command + '\n');
+
+
+    input.value = '';
+
+};
+
+
+  button.addEventListener(
+    'click',
+    sendCommand
+  );
+
+
+  input.addEventListener(
+    'keydown',
+    (event)=>{
+
+      if(event.key === 'Enter'){
+
+        event.preventDefault();
+
+        sendCommand();
+
+      }
+
+    }
+  );
+
+}
+
+
+
+
 
   private createSearchBox(): void {
     if (this.searchBox) return;
@@ -431,8 +514,15 @@ export class SSHTerminal {
     if (termStatus) termStatus.innerHTML = '<div class="w-2 h-2 bg-primary-container animate-pulse"></div> Connected';
 
     const wsUrl = new URL(window.location.href);
+
+   if (import.meta.env.DEV) {
+    wsUrl.protocol = 'wss:';
+    wsUrl.host = 'cloudssh-worker.xcyunidc.workers.dev';
+    } else {
     wsUrl.protocol = wsUrl.protocol === 'https:' ? 'wss:' : 'ws:';
-    wsUrl.pathname = '/api/ssh';
+    }
+
+wsUrl.pathname = '/api/ssh';
     // 匿名路径：用户在前端选定 region 后作为 URL query 传给 Worker；
     // Worker 在 get() 前读取并传入 locationHint（仅手动覆盖路径）
     if (config.locationHint) {
@@ -685,9 +775,7 @@ export class SSHTerminal {
   private showConnectingBanner(): void {
     this.resetTerminalDisplay();
     this.terminal.write(
-      '\x1b[1;33m╔══════════════════════════════════╗\x1b[0m\r\n' +
-      '\x1b[1;33m║      Connecting to CloudSSH      ║\x1b[0m\r\n' +
-      '\x1b[1;33m╚══════════════════════════════════╝\x1b[0m\r\n\r\n'
+      '\x1b[38;5;208mConnecting to CloudSSH\x1b[0m\r\n\r\n'
     );
   }
 

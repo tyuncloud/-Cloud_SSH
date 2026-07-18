@@ -175,7 +175,7 @@ export const UI_THEMES: Record<keyof typeof THEMES, Record<string, string>> = {
    '--agent-user-color': '#f97316',
    '--agent-agent-color': '#fb923c',
   },
-  
+
 };
 
 export class SSHTerminal {
@@ -367,10 +367,14 @@ export class SSHTerminal {
 
 private initMobileCommandPanel(): void {
 
-  const input = document.getElementById('mobile-command-input') as HTMLInputElement | null;
+  const input =
+    document.getElementById('mobile-command-input') as HTMLInputElement | null;
 
+  const button =
+    document.getElementById('mobile-command-send');
 
-  const button = document.getElementById('mobile-command-send');
+  const extract =
+    document.getElementById('extract-panel-btn');
 
 
   if (!input || !button) {
@@ -380,45 +384,49 @@ private initMobileCommandPanel(): void {
 
   const sendCommand = () => {
 
-    const command = input.value;
+    const command = input.value.trim();
 
-
-    if (!command.trim()) {
-        return;
+    if (!command) {
+      return;
     }
 
 
     this.sendWebSocketMessage(command + '\n');
 
-
     input.value = '';
 
-};
+  };
 
 
-  button.addEventListener(
-    'click',
-    sendCommand
-  );
+  button.onclick = sendCommand;
 
 
-  input.addEventListener(
-    'keydown',
-    (event)=>{
+  input.onkeydown = (event) => {
 
-      if(event.key === 'Enter'){
+    if(event.key === 'Enter') {
 
-        event.preventDefault();
+      event.preventDefault();
 
-        sendCommand();
-
-      }
+      sendCommand();
 
     }
-  );
+
+  };
+
+
+  if(extract){
+
+    extract.onclick = () => {
+
+      this.sendWebSocketMessage(
+        'bt default\n'
+      );
+
+    };
+
+  }
 
 }
-
 
 
 

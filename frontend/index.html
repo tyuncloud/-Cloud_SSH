@@ -189,18 +189,22 @@
     </div>
 
     <!-- Terminal Page -->
-    <div id="terminal-section" class="hidden h-screen flex-col bg-background text-on-surface">
+    <div id="terminal-section" class="hidden h-screen flex-col bg-[#fffaf5] text-gray-900">
       <!-- TopAppBar -->
-      <header class="flex justify-between items-center w-full px-6 h-16 bg-background border-b border-outline-variant z-50">
+      <header class="flex justify-between items-center w-full px-6 h-16 bg-white border-b border-gray-200 z-50">
         <div class="flex items-center gap-6">
-          <h1 class="text-2xl font-bold text-primary-container tracking-tighter cursor-pointer">CloudSSH</h1>
+          <h1 class="text-2xl font-bold tracking-tighter cursor-pointer">
+            <span class="text-orange-500">唐云</span>
+            <span class="text-neutral-900"> CloudSSH</span>
+          </h1>
         </div>
         <div class="flex items-center gap-2 sm:gap-4 text-primary-container flex-wrap">
-          <select id="theme-selector" class="bg-surface-variant text-on-surface-variant text-xs py-1 px-2 border-none outline-none cursor-pointer rounded">
-            <option value="cyberpunk">Cyberpunk</option>
-            <option value="glacier">Glacier</option>
-            <option value="gruvbox">Gruvbox</option>
-          </select>
+         <select id="theme-selector" class="bg-surface-variant text-on-surface-variant text-xs py-1 px-2 border-none outline-none cursor-pointer rounded">
+            <option value="cloudssh">CloudSSH</option>
+             <option value="cyberpunk">Cyberpunk</option>
+             <option value="glacier">Glacier</option>
+             <option value="gruvbox">Gruvbox</option>
+         </select>
           <button id="import-theme-btn" class="hover:opacity-80 transition-opacity cursor-pointer p-1 flex items-center justify-center" title="Import Theme">
             <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">upload_file</span>
           </button>
@@ -224,7 +228,7 @@
       </header>
 
       <!-- Tab Bar（标签栏） -->
-      <div id="tab-bar" class="flex items-center bg-background border-b border-outline-variant px-2 h-9 overflow-x-auto custom-scrollbar gap-0.5"
+      <div id="tab-bar" class="flex items-center bg-[#fffaf5] border-b border-orange-100 px-2 h-10 overflow-x-auto custom-scrollbar gap-0.5"
            style="scrollbar-width: thin;">
         <!-- 由 TabManager 动态渲染标签 -->
         <button id="new-tab-btn" class="tab-new-btn" title="New Connection">
@@ -232,12 +236,89 @@
         </button>
       </div>
 
-      <!-- Main Terminal -->
-      <main class="flex-1 p-2 lg:p-6 relative bg-surface-container-lowest overflow-hidden">
-        <div class="absolute inset-0 scanline pointer-events-none z-10 opacity-30"></div>
-        <div id="terminal-wrapper" class="h-full w-full border border-outline-variant bg-[var(--bg)] p-2 lg:p-4 overflow-hidden font-code text-[13px] text-primary-container relative z-0 flex flex-col">
+
+            <!-- Terminal Main Layout -->
+      <div class="flex flex-1 overflow-hidden p-4 gap-4">
+
+        <!-- Server Status Sidebar -->
+        <aside 
+          id="server-sidebar"
+          class="w-64 bg-white border border-orange-100 rounded-xl p-4 shadow-sm"
+        >
+
+          <h2 class="text-sm font-bold text-gray-800 mb-4">
+            服务器状态
+          </h2>
+
+
+          <div class="space-y-4 text-sm">
+
+            <div>
+              <div class="text-gray-400">
+                状态
+              </div>
+
+              <div id="server-status"
+                   class="text-green-600 font-bold">
+                🟢 已连接
+              </div>
+            </div>
+
+
+            <div>
+              <div class="text-gray-400">
+                地址
+              </div>
+
+              <div id="server-host"
+                   class="font-mono">
+                --
+              </div>
+            </div>
+
+
+            <div>
+              <div class="text-gray-400">
+                用户
+              </div>
+
+              <div id="server-user">
+                --
+              </div>
+            </div>
+
+
+            <div>
+              <div class="text-gray-400">
+                SSH端口
+              </div>
+
+              <div id="server-port">
+                --
+              </div>
+            </div>
+
+
+          </div>
+
+        </aside>
+
+
+
+        <!-- Terminal Container -->
+
+          <main 
+            id="terminal-container-wrapper"
+            class="flex-1 bg-white border border-orange-100 rounded-xl overflow-hidden"
+                  >
+
+
+         <div id="terminal-container"
+           class="h-full w-full flex flex-col">
+
+      
           <!-- Status Bar -->
-          <div class="flex justify-between items-center border-b border-[var(--border)] pb-2 mb-4 text-on-surface-variant opacity-80 text-[11px]">
+          <div class="flex justify-between items-center border-b border-orange-100 pb-3 mb-4 text-gray-500 opacity-90 text-[11px]">
             <div class="flex gap-2 sm:gap-6 flex-wrap">
               <span id="term-status" class="flex items-center gap-1"><div class="w-2 h-2 bg-primary-container"></div> Connected</span>
               <span id="term-host" class="truncate max-w-[200px]">Host: -</span>
@@ -249,12 +330,98 @@
             </div>
           </div>
           <!-- Terminal Area (TabManager 在此动态创建每个标签的容器) -->
-          <div id="terminal-area" class="flex-1 overflow-hidden relative"></div>
+          <!-- Terminal Area -->
+<div class="flex-1 overflow-hidden relative flex flex-col">
+
+
+    <!-- xterm区域 -->
+    <div 
+        id="terminal-area"
+        class="flex-1 overflow-hidden relative">
+    </div>
+
+
+
+    <!-- Mobile Command Panel -->
+
+    <div
+        id="mobile-command-panel"
+        class="
+        shrink-0
+        border-t
+        border-orange-100
+        bg-white
+        p-3
+        flex
+        gap-2
+        items-center
+        ">
+
+
+        <input
+            id="mobile-command-input"
+            type="text"
+            placeholder="输入命令，回车发送..."
+            class="
+            flex-1
+            h-10
+            px-3
+            rounded-lg
+            border
+            border-gray-200
+            outline-none
+            text-sm
+            "
+        >
+
+
+        <button
+            id="mobile-command-send"
+            class="
+            h-10
+            px-5
+            rounded-lg
+            bg-orange-500
+            text-white
+            text-sm
+            font-bold
+            ">
+
+            发送
+
+        </button>
+
+
+
+        <button
+            id="extract-panel-btn"
+            class="
+            h-10
+            px-4
+            rounded-lg
+            border
+            border-orange-200
+            text-orange-600
+            text-sm
+            ">
+
+            提取
+
+        </button>
+
+
+    </div>
+
+
+</div>
         </div>
-      </main>
+
+       </div>
+
+     </main>
 
       <!-- Footer -->
-      <footer class="px-6 py-2 flex justify-between items-center z-50 bg-elevated border-t border-outline-variant text-xs h-12 shrink-0">
+      <footer class="px-6 py-2 flex justify-between items-center z-50 bg-[#fffaf5] border-t border-orange-100 text-xs h-12 shrink-0">
         <div class="text-secondary-container opacity-60">© <span id="copyright-year"></span> CLOUD_SSH_TERMINAL - https://github.com/newbietan/CloudSSH</div>
         <div class="flex gap-4">
           <a class="text-on-surface-variant opacity-60 hover:opacity-100 transition-opacity" href="https://github.com/newbietan/CloudSSH">Documentation</a>

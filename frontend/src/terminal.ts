@@ -59,17 +59,6 @@ export const THEMES = {
     selectionBackground: '#504945',
   },
   
-  cloudssh: {
-   '--bg': '#fffaf5',
-   '--bg-surface': '#ffffff',
-   '--bg-elevated': '#ffffff',
-   '--bg-terminal': '#fffaf5',
-   '--text': '#1f2937',
-   '--text-muted': '#6b7280',
-   '--text-dim': '#9ca3af',
-   '--accent': '#f97316',
-   '--accent-secondary': '#fb923c',
- }
 };
 
 export const UI_THEMES: Record<keyof typeof THEMES, Record<string, string>> = {
@@ -157,6 +146,36 @@ export const UI_THEMES: Record<keyof typeof THEMES, Record<string, string>> = {
     '--agent-user-color': '#b8bb26',
     '--agent-agent-color': '#83a598',
   },
+
+  cloudssh: {
+   '--bg': '#fffaf5',
+   '--bg-surface': '#ffffff',
+   '--bg-elevated': '#ffffff',
+    '--bg-terminal': '#fffaf5',
+   '--text': '#1f2937',
+   '--text-muted': '#6b7280',
+   '--text-dim': '#9ca3af',
+   '--accent': '#f97316',
+    '--accent-secondary': '#fb923c',
+   '--accent-secondary-light': '#fed7aa',
+  '--border': '#fed7aa',
+   '--border-strong': '#fdba74',
+   '--error': '#ef4444',
+   '--error-bg': '#fee2e2',
+   '--on-accent': '#ffffff',
+   '--surface-dot': '#fed7aa',
+   '--scrollbar-track': '#fff7ed',
+   '--scrollbar-thumb': '#fdba74',
+   '--scrollbar-thumb-hover': '#fb923c',
+   '--scanline-tint': 'rgba(249,115,22,0.02)',
+   '--accent-glow': 'rgba(249,115,22,0.08)',
+   '--modal-overlay': 'rgba(0,0,0,0.4)',
+   '--on-surface': '#1f2937',
+   '--on-surface-variant': '#6b7280',
+   '--agent-user-color': '#f97316',
+   '--agent-agent-color': '#fb923c',
+  },
+  
 };
 
 export class SSHTerminal {

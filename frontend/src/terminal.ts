@@ -730,6 +730,9 @@ private initMobileCommandPanel(): void {
               this.onLatencyUpdated?.(this.cfLatency, this.cfColo, this.wsLatency);
               break;
           }
+
+           }
+           
         catch {
 
                this.terminalOutputBuffer += event.data;

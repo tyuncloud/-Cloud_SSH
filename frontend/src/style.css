@@ -2897,3 +2897,41 @@ textarea.tyun-input:focus {
     flex-shrink:0;
 
 }
+
+.cloudssh-context-menu {
+
+  background:white;
+
+  border:1px solid #fed7aa;
+
+  border-radius:8px;
+
+  padding:6px;
+
+  box-shadow:0 10px 30px rgba(0,0,0,.15);
+
+  min-width:120px;
+
+  color:#1f2937;
+
+  font-size:14px;
+
+}
+
+
+.cloudssh-context-menu div {
+
+  padding:8px 12px;
+
+  cursor:pointer;
+
+  border-radius:6px;
+
+}
+
+
+.cloudssh-context-menu div:hover {
+
+  background:#fff7ed;
+
+}

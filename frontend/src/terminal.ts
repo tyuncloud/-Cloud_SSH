@@ -251,20 +251,8 @@ export class SSHTerminal {
 
     window.addEventListener('resize', this.resizeListener);
 
-    this.container.addEventListener(
-  'contextmenu',
-  (e)=>{
-
-    e.preventDefault();
-
-    this.showContextMenu(
-      e.clientX,
-      e.clientY
-    );
-
-  }
-);
-
+    
+  
    
     // Drag-and-drop file upload support (trzsz)
     this.container.addEventListener('dragover', (e) => {
@@ -342,6 +330,29 @@ export class SSHTerminal {
     }
 
     this.terminal.open(this.container);
+    const terminalElement =
+  this.container.querySelector('.xterm');
+
+
+if (terminalElement) {
+
+  terminalElement.addEventListener(
+    'contextmenu',
+    (e)=>{
+
+      e.preventDefault();
+      e.stopPropagation();
+
+
+      this.showContextMenu(
+        e.clientX,
+        e.clientY
+      );
+
+    }
+  );
+
+}
     this.initMobileCommandPanel();
     this.mounted = true;
     

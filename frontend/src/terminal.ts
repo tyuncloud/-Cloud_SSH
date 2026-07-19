@@ -331,7 +331,7 @@ export class SSHTerminal {
 
     this.terminal.open(this.container);
     const terminalElement =
-  this.container.querySelector('.xterm');
+  this.container.querySelector('.xterm') as HTMLElement | null;
 
 
 if (terminalElement) {

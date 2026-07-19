@@ -338,7 +338,7 @@ if (terminalElement) {
 
   terminalElement.addEventListener(
     'contextmenu',
-    (e)=>{
+    (e: MouseEvent)=>{
 
       e.preventDefault();
       e.stopPropagation();

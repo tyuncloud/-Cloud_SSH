@@ -206,6 +206,7 @@ export class SSHTerminal {
   private searchBox: HTMLElement | null = null;
   private searchInput: HTMLInputElement | null = null;
   private searchVisible: boolean = false;
+  private contextMenu: HTMLElement | null = null;
   private cfLatency: number | null = null;
   private cfColo: string | null = null;
   private lastPingTime: number | null = null;
@@ -250,58 +251,21 @@ export class SSHTerminal {
 
     window.addEventListener('resize', this.resizeListener);
 
-    this.container.addEventListener('contextmenu', async (e) => {
+    this.container.addEventListener(
+  'contextmenu',
+  (e)=>{
 
-  e.preventDefault();
+    e.preventDefault();
 
-
-  const selection = this.terminal.getSelection();
-
-
-  // 有选中文字：复制
-  if (selection) {
-
-    try {
-
-      await navigator.clipboard.writeText(selection);
-
-      this.terminal.clearSelection();
-
-    } catch(err){
-
-      console.error('Copy failed', err);
-
-    }
-
-    return;
-  }
-
-
-
-  // 没选择：粘贴
-
-  try {
-
-    const text = await navigator.clipboard.readText();
-
-
-    if(
-      text &&
-      this.ws?.readyState === WebSocket.OPEN
-    ){
-
-      this.ws.send(text);
-
-    }
-
-
-  } catch(err){
-
-    console.error('Paste failed', err);
+    this.showContextMenu(
+      e.clientX,
+      e.clientY
+    );
 
   }
+);
 
-});
+   
     // Drag-and-drop file upload support (trzsz)
     this.container.addEventListener('dragover', (e) => {
       e.preventDefault();
@@ -400,7 +364,105 @@ export class SSHTerminal {
 
    
 
+private showContextMenu(x: number, y: number): void {
 
+  this.hideContextMenu();
+
+
+  const menu = document.createElement('div');
+
+  menu.className = 'cloudssh-context-menu';
+
+
+  const selection = this.terminal.getSelection();
+
+
+  menu.innerHTML = `
+
+    ${
+      selection
+      ?
+      `<div data-action="copy">
+        📋 复制
+      </div>`
+      :
+      ''
+    }
+
+
+    <div data-action="paste">
+      📥 粘贴
+    </div>
+
+  `;
+
+
+  menu.style.position = 'fixed';
+  menu.style.left = `${x}px`;
+  menu.style.top = `${y}px`;
+  menu.style.zIndex = '9999';
+
+
+  document.body.appendChild(menu);
+
+
+  menu.querySelector('[data-action="copy"]')
+    ?.addEventListener('click', async()=>{
+
+      if(selection){
+
+        await navigator.clipboard.writeText(selection);
+
+        this.terminal.clearSelection();
+
+      }
+
+      this.hideContextMenu();
+
+    });
+
+
+
+  menu.querySelector('[data-action="paste"]')
+    ?.addEventListener('click', async()=>{
+
+      const text =
+        await navigator.clipboard.readText();
+
+
+      if(
+        text &&
+        this.ws?.readyState === WebSocket.OPEN
+      ){
+
+        this.ws.send(text);
+
+      }
+
+
+      this.hideContextMenu();
+
+    });
+
+
+
+  this.contextMenu = menu;
+
+}
+
+
+
+private hideContextMenu(): void {
+
+  if(this.contextMenu){
+
+    this.contextMenu.remove();
+
+    this.contextMenu = null;
+
+  }
+
+}
 
 
 // 手机命令输入
@@ -732,7 +794,7 @@ private initMobileCommandPanel(): void {
           }
 
            }
-           
+
         catch {
 
                this.terminalOutputBuffer += event.data;

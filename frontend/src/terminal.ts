@@ -189,6 +189,7 @@ export class SSHTerminal {
   private mobileCommandSendBtn: HTMLElement | null = null;
   private disposables: { dispose(): void }[] = [];
   private terminalDisposables: { dispose(): void }[] = [];
+  private terminalOutputBuffer = '';
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
   private trzszFilter: TrzszFilter | null = null;
   private mounted: boolean = false;
@@ -249,19 +250,58 @@ export class SSHTerminal {
 
     window.addEventListener('resize', this.resizeListener);
 
-    // Right-click paste support
     this.container.addEventListener('contextmenu', async (e) => {
-      e.preventDefault();
-      try {
-        const text = await navigator.clipboard.readText();
-        if (text && this.ws?.readyState === WebSocket.OPEN) {
-          this.ws.send(text);
-        }
-      } catch (err) {
-        console.error('Failed to read clipboard', err);
-      }
-    });
 
+  e.preventDefault();
+
+
+  const selection = this.terminal.getSelection();
+
+
+  // 有选中文字：复制
+  if (selection) {
+
+    try {
+
+      await navigator.clipboard.writeText(selection);
+
+      this.terminal.clearSelection();
+
+    } catch(err){
+
+      console.error('Copy failed', err);
+
+    }
+
+    return;
+  }
+
+
+
+  // 没选择：粘贴
+
+  try {
+
+    const text = await navigator.clipboard.readText();
+
+
+    if(
+      text &&
+      this.ws?.readyState === WebSocket.OPEN
+    ){
+
+      this.ws.send(text);
+
+    }
+
+
+  } catch(err){
+
+    console.error('Paste failed', err);
+
+  }
+
+});
     // Drag-and-drop file upload support (trzsz)
     this.container.addEventListener('dragover', (e) => {
       e.preventDefault();
@@ -690,10 +730,13 @@ private initMobileCommandPanel(): void {
               this.onLatencyUpdated?.(this.cfLatency, this.cfColo, this.wsLatency);
               break;
           }
-        } catch {
-          // Non-JSON string data — pass through trzsz filter
-          this.trzszFilter!.processServerOutput(event.data);
-        }
+        catch {
+
+               this.terminalOutputBuffer += event.data;
+
+             this.trzszFilter!.processServerOutput(event.data);
+
+              }
       } else {
         this.trzszFilter!.processServerOutput(event.data);
       }

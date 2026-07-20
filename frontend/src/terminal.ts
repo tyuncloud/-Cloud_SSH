@@ -545,6 +545,7 @@ private initMobileCommandPanel(): void {
 
 private extractBTInfo(): void {
 
+
   if (this.extractingBT) {
     return;
   }
@@ -553,53 +554,61 @@ private extractBTInfo(): void {
   this.extractingBT = true;
 
 
+
   const buffer = this.terminal.buffer.active;
 
 
+  const lines:string[] = [];
 
-    const buffer = this.terminal.buffer.active;
 
-const lines:string[] = [];
+  for(let i = 0; i < buffer.length; i++){
 
-for(let i = 0; i < buffer.length; i++){
+    const line = buffer.getLine(i);
 
-  const line = buffer.getLine(i);
+    if(line){
 
-  if(line){
+      lines.push(
+        line.translateToString(true)
+      );
 
-    lines.push(
-      line.translateToString(true)
-    );
+    }
 
   }
 
-}
 
 
-   const text = lines.join('\n');
+  const fullText = lines.join('\n');
 
 
-    console.log(
-    'BT终端文本长度:',
-    text.length
-);
 
-
-   console.log(
-   '宝塔原始输出:',
-   text
+  const index = fullText.lastIndexOf(
+    'BT-Panel default info!'
   );
 
 
-    const btInfo = this.parseBTInfo(text);
 
-    this.showBTModal(btInfo);
-
-
-    this.extractingBT = false;
+  const text = index >= 0
+    ? fullText.substring(index)
+    : fullText;
 
 
-  },5000);
+
+  console.log(
+    '宝塔原始输出:',
+    text
+  );
+
+
+
+  const btInfo = this.parseBTInfo(text);
+
+
+
+  this.showBTModal(btInfo);
+
+
+
+  this.extractingBT = false;
 
 
 }

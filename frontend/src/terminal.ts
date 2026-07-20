@@ -553,15 +553,8 @@ private extractBTInfo(): void {
   this.extractingBT = true;
 
 
-  this.terminalOutputBuffer = '';
+  const buffer = this.terminal.buffer.active;
 
-
-  this.sendWebSocketMessage(
-    'bt default\n'
-  );
-
-
-  setTimeout(() => {
 
 
     const buffer = this.terminal.buffer.active;
@@ -1053,6 +1046,13 @@ ${info.password}
 
     this.ws.onclose = (event) => {
       if (socket !== this.ws) return;
+      if (this.extractingBT) {
+
+       this.extractingBT = false;
+
+       return;
+
+      }
 
       this.stopHeartbeat();
       this.terminal.writeln(

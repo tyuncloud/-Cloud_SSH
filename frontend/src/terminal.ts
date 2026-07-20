@@ -190,6 +190,7 @@ export class SSHTerminal {
   private disposables: { dispose(): void }[] = [];
   private terminalDisposables: { dispose(): void }[] = [];
   private terminalOutputBuffer = '';
+  private extractingBT = false;
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
   private trzszFilter: TrzszFilter | null = null;
   private mounted: boolean = false;
@@ -527,19 +528,220 @@ private initMobileCommandPanel(): void {
   };
 
 
-  if(extract){
+    if(extract){
 
     extract.onclick = () => {
 
-      this.sendWebSocketMessage(
-        'bt default\n'
-      );
+    this.extractBTInfo();
 
     };
 
   }
 
 }
+
+
+// ==================== 宝塔提取 ====================
+
+private extractBTInfo(): void {
+
+  if (this.extractingBT) {
+    return;
+  }
+
+
+  this.extractingBT = true;
+
+
+  this.terminalOutputBuffer = '';
+
+
+  this.sendWebSocketMessage(
+    'bt default\n'
+  );
+
+
+  setTimeout(() => {
+
+
+    const text = this.terminalOutputBuffer;
+
+
+    console.log(
+      '宝塔原始输出:',
+      text
+    );
+
+
+    const btInfo = this.parseBTInfo(text);
+
+    this.showBTModal(btInfo);
+
+
+    this.extractingBT = false;
+
+
+  },5000);
+
+
+}
+
+
+// 宝塔解析
+
+private parseBTInfo(text:string) {
+
+
+  const externalUrl =
+    text.match(/外网ipv4面板地址:\s*(https?:\/\/\S+)/)?.[1] || '';
+
+
+  const internalUrl =
+    text.match(/内网面板地址:\s*(https?:\/\/\S+)/)?.[1] || '';
+
+
+  const username =
+    text.match(/username:\s*(\S+)/)?.[1] || '';
+
+
+  const password =
+    text.match(/password:\s*(\S+)/)?.[1] || '';
+
+
+
+  const btInfo = {
+
+    externalUrl,
+
+    internalUrl,
+
+    username,
+
+    password
+
+  };
+
+
+  console.log(
+    '宝塔解析结果:',
+    btInfo
+  );
+
+
+  return btInfo;
+
+}
+
+private showBTModal(info:any):void {
+
+
+  const modal = document.createElement('div');
+
+
+  modal.style.position = 'fixed';
+  modal.style.top = '50%';
+  modal.style.left = '50%';
+  modal.style.transform = 'translate(-50%,-50%)';
+  modal.style.zIndex = '99999';
+  modal.style.background = '#fff';
+  modal.style.padding = '24px';
+  modal.style.borderRadius = '12px';
+  modal.style.width = '360px';
+
+
+  modal.innerHTML = `
+
+<h3>
+🟧 宝塔面板信息
+</h3>
+
+
+<p>
+外网地址：
+<br>
+<input value="${info.externalUrl}" readonly style="width:100%">
+</p>
+
+
+<p>
+内网地址：
+<br>
+<input value="${info.internalUrl}" readonly style="width:100%">
+</p>
+
+
+<p>
+用户名：
+<br>
+<input value="${info.username}" readonly style="width:100%">
+</p>
+
+
+<p>
+密码：
+<br>
+<input value="${info.password}" readonly style="width:100%">
+</p>
+
+
+<button id="bt-copy">
+一键复制
+</button>
+
+
+<button id="bt-close">
+关闭
+</button>
+
+
+`;
+
+
+  document.body.appendChild(modal);
+
+
+
+  modal.querySelector('#bt-close')
+  ?.addEventListener(
+    'click',
+    ()=>{
+      modal.remove();
+    }
+  );
+
+
+  modal.querySelector('#bt-copy')
+  ?.addEventListener(
+    'click',
+    ()=>{
+
+      navigator.clipboard.writeText(
+`
+宝塔地址:
+${info.externalUrl}
+
+内网地址:
+${info.internalUrl}
+
+用户名:
+${info.username}
+
+密码:
+${info.password}
+`
+      );
+
+    }
+  );
+
+
+}
+
+
+
+// ==================== 搜索 ====================
+
+
 
 
 
@@ -654,7 +856,12 @@ private initMobileCommandPanel(): void {
   }
 
   async connect(config: SSHConnectionConfig, options: ConnectOptions = {}): Promise<void> {
+
     this.resetActiveConnection();
+
+    // 清空宝塔解析缓存
+    this.terminalOutputBuffer = '';
+
     this.lastConfig = config;
     this.canReconnect = true;
     if (options.resetDisplay !== false) {

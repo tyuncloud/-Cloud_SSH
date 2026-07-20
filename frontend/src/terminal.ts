@@ -564,13 +564,32 @@ private extractBTInfo(): void {
   setTimeout(() => {
 
 
-    const text = this.terminalOutputBuffer;
+    const buffer = this.terminal.buffer.active;
+
+const lines:string[] = [];
+
+for(let i = 0; i < buffer.length; i++){
+
+  const line = buffer.getLine(i);
+
+  if(line){
+
+    lines.push(
+      line.translateToString(true)
+    );
+
+  }
+
+}
+
+
+   const text = lines.join('\n');
 
 
     console.log(
-    'BT缓存长度:',
-   text.length
-  );
+    'BT终端文本长度:',
+    text.length
+);
 
 
    console.log(

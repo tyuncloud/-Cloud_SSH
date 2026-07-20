@@ -593,19 +593,19 @@ private parseBTInfo(text:string) {
 
 
   const externalUrl =
-    text.match(/外网ipv4面板地址:\s*(https?:\/\/\S+)/)?.[1] || '';
+    text.match(/外网ipv4面板地址[:：\s]+(https?:\/\/\S+)/)?.[1] || '';
 
 
   const internalUrl =
-    text.match(/内网面板地址:\s*(https?:\/\/\S+)/)?.[1] || '';
+    text.match(/内网面板地址[:：\s]+(https?:\/\/\S+)/)?.[1] || '';
 
 
   const username =
-    text.match(/username:\s*(\S+)/)?.[1] || '';
+    text.match(/username[:：\s]+(\S+)/i)?.[1] || '';
 
 
   const password =
-    text.match(/password:\s*(\S+)/)?.[1] || '';
+    text.match(/password[:：\s]+(\S+)/i)?.[1] || '';
 
 
 

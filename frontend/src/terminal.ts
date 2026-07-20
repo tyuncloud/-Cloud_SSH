@@ -568,9 +568,15 @@ private extractBTInfo(): void {
 
 
     console.log(
-      '宝塔原始输出:',
-      text
-    );
+    'BT缓存长度:',
+   text.length
+  );
+
+
+   console.log(
+   '宝塔原始输出:',
+   text
+  );
 
 
     const btInfo = this.parseBTInfo(text);

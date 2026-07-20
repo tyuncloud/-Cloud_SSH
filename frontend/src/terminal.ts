@@ -661,63 +661,273 @@ private parseBTInfo(text:string) {
 
 private showBTModal(info:any):void {
 
-
   const modal = document.createElement('div');
-
 
   modal.style.position = 'fixed';
   modal.style.top = '50%';
   modal.style.left = '50%';
   modal.style.transform = 'translate(-50%,-50%)';
   modal.style.zIndex = '99999';
-  modal.style.background = '#fff';
-  modal.style.padding = '24px';
-  modal.style.borderRadius = '12px';
-  modal.style.width = '360px';
+
+  modal.style.width = '380px';
+  modal.style.maxWidth = '90vw';
+
+  modal.style.background = '#fffaf5';
+  modal.style.border = '1px solid #fed7aa';
+  modal.style.borderRadius = '16px';
+  modal.style.padding = '20px';
+  modal.style.boxShadow = '0 20px 40px rgba(0,0,0,.15)';
+  modal.style.color = '#1f2937';
 
 
   modal.innerHTML = `
 
-<h3>
+<div style="
+font-size:18px;
+font-weight:700;
+margin-bottom:18px;
+color:#f97316;
+">
 🟧 宝塔面板信息
-</h3>
+</div>
 
 
-<p>
-外网地址：
-<br>
-<input value="${info.externalUrl}" readonly style="width:100%">
-</p>
+<div class="bt-item">
+
+<div style="
+font-size:13px;
+color:#6b7280;
+margin-bottom:6px;
+">
+🌐 外网地址
+</div>
 
 
-<p>
-内网地址：
-<br>
-<input value="${info.internalUrl}" readonly style="width:100%">
-</p>
+<div class="bt-row" style="
+display:flex;
+align-items:center;
+gap:8px;
+">
+
+<div style="
+flex:1;
+word-break:break-all;
+font-size:13px;
+background:#fff;
+border:1px solid #fed7aa;
+border-radius:8px;
+padding:8px;
+">
+${info.externalUrl || '-'}
+</div>
 
 
-<p>
-用户名：
-<br>
-<input value="${info.username}" readonly style="width:100%">
-</p>
+<button data-copy="${info.externalUrl}"
+class="bt-copy-btn"
+style="
+border:none;
+background:#fff;
+cursor:pointer;
+font-size:18px;
+">
+📋
+</button>
+
+</div>
+
+</div>
 
 
-<p>
-密码：
-<br>
-<input value="${info.password}" readonly style="width:100%">
-</p>
+
+<div class="bt-item"
+style="margin-top:14px;"
+>
+
+<div style="
+font-size:13px;
+color:#6b7280;
+margin-bottom:6px;
+">
+🏠 内网地址
+</div>
 
 
-<button id="bt-copy">
-一键复制
+<div style="
+display:flex;
+align-items:center;
+gap:8px;
+">
+
+
+<div style="
+flex:1;
+word-break:break-all;
+font-size:13px;
+background:#fff;
+border:1px solid #fed7aa;
+border-radius:8px;
+padding:8px;
+">
+${info.internalUrl || '-'}
+</div>
+
+
+<button data-copy="${info.internalUrl}"
+class="bt-copy-btn"
+style="
+border:none;
+background:#fff;
+cursor:pointer;
+font-size:18px;
+">
+📋
 </button>
 
 
-<button id="bt-close">
-关闭
+</div>
+
+</div>
+
+
+
+
+<div class="bt-item"
+style="margin-top:14px;"
+>
+
+<div style="
+font-size:13px;
+color:#6b7280;
+margin-bottom:6px;
+">
+👤 用户名
+</div>
+
+
+<div style="
+display:flex;
+align-items:center;
+gap:8px;
+">
+
+
+<div style="
+flex:1;
+font-size:13px;
+background:#fff;
+border:1px solid #fed7aa;
+border-radius:8px;
+padding:8px;
+">
+${info.username || '-'}
+</div>
+
+
+<button data-copy="${info.username}"
+class="bt-copy-btn"
+style="
+border:none;
+background:#fff;
+cursor:pointer;
+font-size:18px;
+">
+📋
+</button>
+
+
+</div>
+
+</div>
+
+
+
+
+<div class="bt-item"
+style="margin-top:14px;"
+>
+
+<div style="
+font-size:13px;
+color:#6b7280;
+margin-bottom:6px;
+">
+🔑 密码
+</div>
+
+
+<div style="
+display:flex;
+align-items:center;
+gap:8px;
+">
+
+
+<div style="
+flex:1;
+font-size:13px;
+background:#fff;
+border:1px solid #fed7aa;
+border-radius:8px;
+padding:8px;
+">
+${info.password || '-'}
+</div>
+
+
+<button data-copy="${info.password}"
+class="bt-copy-btn"
+style="
+border:none;
+background:#fff;
+cursor:pointer;
+font-size:18px;
+">
+📋
+</button>
+
+
+</div>
+
+</div>
+
+
+
+
+<div style="
+height:1px;
+background:#fed7aa;
+margin:20px 0;
+"></div>
+
+
+
+<button id="bt-copy-all"
+style="
+width:100%;
+padding:10px;
+border:none;
+border-radius:10px;
+background:#f97316;
+color:white;
+font-size:14px;
+cursor:pointer;
+">
+📋 复制全部
+</button>
+
+
+<button id="bt-close"
+style="
+margin-top:10px;
+width:100%;
+padding:10px;
+border:1px solid #fed7aa;
+border-radius:10px;
+background:white;
+font-size:14px;
+cursor:pointer;
+">
+✖ 关闭窗口
 </button>
 
 
@@ -728,21 +938,49 @@ private showBTModal(info:any):void {
 
 
 
-  modal.querySelector('#bt-close')
-  ?.addEventListener(
-    'click',
-    ()=>{
-      modal.remove();
-    }
-  );
+  // 单项复制
+  modal.querySelectorAll('.bt-copy-btn')
+  .forEach(btn=>{
+
+    btn.addEventListener('click',async()=>{
+
+      const value =
+      (btn as HTMLElement).dataset.copy || '';
 
 
-  modal.querySelector('#bt-copy')
-  ?.addEventListener(
-    'click',
-    ()=>{
+      await navigator.clipboard.writeText(value);
 
-      navigator.clipboard.writeText(
+
+      const old =
+      btn.innerHTML;
+
+
+      btn.innerHTML =
+      '✅ 已复制';
+
+
+      setTimeout(()=>{
+
+        btn.innerHTML = old;
+
+      },1500);
+
+
+    });
+
+  });
+
+
+
+
+
+  // 复制全部
+
+  modal.querySelector('#bt-copy-all')
+  ?.addEventListener('click',async(e)=>{
+
+
+    await navigator.clipboard.writeText(
 `
 宝塔地址:
 ${info.externalUrl}
@@ -756,8 +994,41 @@ ${info.username}
 密码:
 ${info.password}
 `
-      );
+    );
 
+
+    const btn =
+    e.currentTarget as HTMLElement;
+
+
+    const old =
+    btn.innerHTML;
+
+
+    btn.innerHTML =
+    '✅ 已全部复制';
+
+
+    setTimeout(()=>{
+
+      btn.innerHTML = old;
+
+    },1500);
+
+
+  });
+
+
+
+
+
+  //关闭
+
+  modal.querySelector('#bt-close')
+  ?.addEventListener(
+    'click',
+    ()=>{
+      modal.remove();
     }
   );
 

@@ -977,10 +977,14 @@ cursor:pointer;
   // 复制全部
 
   modal.querySelector('#bt-copy-all')
-  ?.addEventListener('click',async(e)=>{
+?.addEventListener('click', async (e)=>{
 
 
-    await navigator.clipboard.writeText(
+  const btn =
+  e.currentTarget as HTMLElement;
+
+
+  const text =
 `
 宝塔地址:
 ${info.externalUrl}
@@ -993,30 +997,71 @@ ${info.username}
 
 密码:
 ${info.password}
-`
-    );
+`;
 
 
-    const btn =
-    e.currentTarget as HTMLElement;
+
+  try {
 
 
-    const old =
-    btn.innerHTML;
+    await navigator.clipboard.writeText(text);
+
 
 
     btn.innerHTML =
     '✅ 已全部复制';
 
 
-    setTimeout(()=>{
 
-      btn.innerHTML = old;
-
-    },1500);
+  } catch(err){
 
 
-  });
+    console.error(
+      '复制失败:',
+      err
+    );
+
+
+    // 备用复制方案
+    const textarea =
+    document.createElement('textarea');
+
+
+    textarea.value = text;
+
+
+    document.body.appendChild(textarea);
+
+
+    textarea.select();
+
+
+    document.execCommand('copy');
+
+
+    textarea.remove();
+
+
+
+    btn.innerHTML =
+    '✅ 已全部复制';
+
+
+  }
+
+
+
+  setTimeout(()=>{
+
+    btn.innerHTML =
+    '📋 复制全部';
+
+
+  },1500);
+
+
+
+});
 
 
 

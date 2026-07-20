@@ -970,6 +970,7 @@ ${info.password}
 
     this.ws.onmessage = (event) => {
       if (typeof event.data === 'string') {
+            this.terminalOutputBuffer += event.data;
         try {
           const msg = JSON.parse(event.data);
           if (msg.type === 'sftp_attach') {
@@ -1021,11 +1022,11 @@ ${info.password}
 
         catch {
 
-               this.terminalOutputBuffer += event.data;
 
-             this.trzszFilter!.processServerOutput(event.data);
+           this.trzszFilter!.processServerOutput(event.data);
 
-              }
+
+        }
       } else {
         this.trzszFilter!.processServerOutput(event.data);
       }

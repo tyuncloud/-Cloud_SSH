@@ -1483,15 +1483,12 @@ ${info.password}
     this.terminal.write('\x1b[2J\x1b[3J\x1b[H');
   }
 
-  private showConnectingBanner(): void {
+   private showConnectingBanner(): void {
 
-     this.resetTerminalDisplay();
+   this.resetTerminalDisplay();
 
-     this.terminal.write(
-          `
-          \x1b[38;5;208m唐云 CloudSSH\x1b[0m
-           \x1b[90mSecure ssh.tyunidc.com\r\n\r\n\x1b[0m
-           `
+   this.terminal.write(
+    '\x1b[38;5;208mConnecting to 唐云 CloudSSH\x1b[0m\r\n\r\n'
   );
 
 }

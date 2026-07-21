@@ -1484,11 +1484,17 @@ ${info.password}
   }
 
   private showConnectingBanner(): void {
-    this.resetTerminalDisplay();
-    this.terminal.write(
-      '\x1b[38;5;208mConnecting to CloudSSH\x1b[0m\r\n\r\n'
-    );
-  }
+
+     this.resetTerminalDisplay();
+
+     this.terminal.write(
+          `
+          \x1b[38;5;208m唐云 CloudSSH\x1b[0m
+           \x1b[90mSecure ssh.tyunidc.com\r\n\r\n\x1b[0m
+           `
+  );
+
+}
 
   private stopHeartbeat(): void {
     if (this.heartbeatInterval) {

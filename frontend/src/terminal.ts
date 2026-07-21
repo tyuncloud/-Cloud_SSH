@@ -199,6 +199,7 @@ export class SSHTerminal {
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
   private lastConfig: SSHConnectionConfig | null = null;
   private canReconnect: boolean = true;
+  private manualDisconnect: boolean = false;
   private restoreCursorBlinkAfterReturnPrompt: boolean = false;
   private onSessionClosed?: (event: CloseEvent) => void;
   private onSessionReady?: () => void;
@@ -1201,6 +1202,7 @@ ${info.password}
   async connect(config: SSHConnectionConfig, options: ConnectOptions = {}): Promise<void> {
 
     this.resetActiveConnection();
+    this.manualDisconnect = false;
 
     // 清空宝塔解析缓存
     this.terminalOutputBuffer = '';
@@ -1393,8 +1395,15 @@ ${info.password}
         return;
       }
 
-      if (this.canReconnect && this.lastConfig && this.reconnectAttempts < this.maxReconnectAttempts) {
-        this.scheduleReconnect();
+      if (
+       !this.manualDisconnect &&
+       this.canReconnect &&
+       this.lastConfig &&
+       this.reconnectAttempts < this.maxReconnectAttempts
+   ) {
+
+       this.scheduleReconnect();
+
       }
     };
 
@@ -1488,7 +1497,7 @@ ${info.password}
    this.resetTerminalDisplay();
 
    this.terminal.write(
-    '\x1b[38;5;208mConnecting to 唐云 CloudSSH\x1b[0m\r\n\r\n'
+    '\x1b[38;5;208mConnecting to 唐云·CloudSSH·www.tyunidc.com\x1b[0m\r\n\r\n'
   );
 
 }
@@ -1554,11 +1563,18 @@ ${info.password}
   }
 
   disconnect(): void {
-    this.reconnectAttempts = this.maxReconnectAttempts;
-    this.resetActiveConnection();
-    this.lastConfig = null;
-    this.resetTerminalDisplay();
-  }
+
+  this.manualDisconnect = true;
+
+  this.reconnectAttempts = this.maxReconnectAttempts;
+
+  this.resetActiveConnection();
+
+  this.lastConfig = null;
+
+  this.resetTerminalDisplay();
+
+}
 
   dispose(): void {
     this.disconnect();

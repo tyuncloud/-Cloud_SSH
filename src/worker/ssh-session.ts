@@ -118,9 +118,6 @@ export class SSHSession {
   private terminalContext: TerminalContext = new TerminalContext();
   private agentCore: AgentCore | null = null;
   private activeExecChannels: Map<number, AgentExecChannel> = new Map();
-
-  private serverInfoCollected = false;
-
   private confirmationResolve: ((approved: boolean) => void) | null = null;
   private env: Env | null = null;
   private userId: string | null = null;
@@ -548,95 +545,36 @@ export class SSHSession {
         break;
       }
 
-       case SSH_MSG_KEX_ECDH_REPLY: {
+      case SSH_MSG_KEX_ECDH_REPLY:
+        this.sendDebug('Received ECDH_REPLY');
+        await this.handleECDHReply(payload);
+        break;
 
-       this.sendDebug('Received ECDH_REPLY');
+      case SSH_MSG_NEWKEYS: {
+        this.sendDebug(`Received NEWKEYS, seqNumSend=${this.seqNumSend}`);
+        const newKeys = new Uint8Array([SSH_MSG_NEWKEYS]);
+        const packet = await SSHPacketBuilder.build(
+          newKeys, 8, null, this.seqNumSend
+        );
+        this.seqNumSend = nextSequenceNumber(this.seqNumSend);
+        await this.writeSocket(packet);
+        this.sendDebug(`Client NEWKEYS sent, seqNumSend=${this.seqNumSend}`);
 
-       await this.handleECDHReply(payload);
+        await this.enableEncryption();
+        this.sendDebug('Encryption enabled');
 
-       break;
-
+        this.state = 'auth';
+        try {
+          await this.sendServiceRequest();
+          this.sendDebug('SERVICE_REQUEST sent successfully');
+        } catch (e) {
+          const errMsg = e instanceof Error ? e.message : String(e);
+          this.sendDebug(`SERVICE_REQUEST failed: ${errMsg}`);
+          this.sendError('SERVICE_REQUEST 失败: ' + errMsg);
+          this.close();
+        }
+        break;
       }
-
-
-
-       case SSH_MSG_NEWKEYS: {
-
-  this.sendDebug(
-    `SERVER NEWKEYS received, seqNumSend=${this.seqNumSend}`
-  );
-
-
-  const clientNewKeys = new Uint8Array([
-    SSH_MSG_NEWKEYS
-  ]);
-
-
-  const packet = await SSHPacketBuilder.build(
-    clientNewKeys,
-    8,
-    null,
-    this.seqNumSend
-  );
-
-
-  this.seqNumSend = nextSequenceNumber(
-    this.seqNumSend
-  );
-
-
-  await this.writeSocket(packet);
-
-
-  this.sendDebug(
-    `CLIENT NEWKEYS sent, seqNumSend=${this.seqNumSend}`
-  );
-
-
-  try {
-
-    await this.enableEncryption();
-
-
-    this.sendDebug(
-      'Encryption enabled'
-    );
-
-
-    this.state = 'auth';
-
-
-    await this.sendServiceRequest();
-
-
-    this.sendDebug(
-      'SERVICE_REQUEST sent successfully'
-    );
-
-
-  } catch(e) {
-
-
-    const errMsg =
-      e instanceof Error
-        ? e.message
-        : String(e);
-
-
-    this.sendError(
-      'NEWKEYS处理失败: ' + errMsg
-    );
-
-
-    this.close();
-
-
-  }
-
-
-  break;
-
-}
 
       case SSH_MSG_UNIMPLEMENTED:
         this.sendDebug('Server sent UNIMPLEMENTED');
@@ -781,10 +719,7 @@ export class SSHSession {
     const macC2S = getMacSpec(this.negotiatedMacC2S);
     const macS2C = getMacSpec(this.negotiatedMacS2C);
 
-    this.sendDebug(
-  "Before deriveKeys"
-);
-this.derivedKeys = await KeyDerivation.deriveKeys(
+    this.derivedKeys = await KeyDerivation.deriveKeys(
       sharedSecret,
       H,
       this.sessionID!,
@@ -792,34 +727,8 @@ this.derivedKeys = await KeyDerivation.deriveKeys(
       cipherS2C.ivLength,
       macC2S.keyLength,
       macS2C.keyLength
-);
-
-this.sendDebug(
-  "After deriveKeys"
-);
-
-if (!this.derivedKeys) {
-
-  this.sendDebug(
-    'Key derivation failed: derivedKeys is null'
-  );
-
-  this.close();
-
-  return;
-
-}
-
-
-this.sendDebug(
-  'Keys derived OK, waiting for NEWKEYS'
-);
-
-this.sendDebug(
-  `derivedKeys check=${this.derivedKeys ? 'OK':'NULL'}`
-);
-
-
+    );
+    this.sendDebug('Keys derived, waiting for NEWKEYS');
   }
 
   private async verifyHostKeySignature(
@@ -990,14 +899,6 @@ this.sendDebug(
   }
 
   private async enableEncryption(): Promise<void> {
-
-    if (!this.derivedKeys) {
-
-      throw new Error(
-        'derivedKeys is null before enableEncryption'
-      );
-
-    }
     const keys = this.derivedKeys!;
     const cipherC2S = getCipherSpec(this.negotiatedCipherC2S);
     const cipherS2C = getCipherSpec(this.negotiatedCipherS2C);
@@ -1074,14 +975,11 @@ this.sendDebug(
         break;
 
       case SSH_MSG_USERAUTH_SUCCESS:
-         this.sendStatus('认证成功', 'auth_success');
+        this.sendStatus('认证成功', 'auth_success');
         this.state = 'shell';
         this.startKeepalive();
-
-       void this.collectServerInfo();
-
-      await this.openShell();
-       break;
+        await this.openShell();
+        break;
 
       case SSH_MSG_USERAUTH_FAILURE:
         this.sendError('认证失败：用户名或密码错误');
@@ -1094,13 +992,9 @@ this.sendDebug(
   }
 
   private async openShell(): Promise<void> {
-
-    void this.collectServerInfo();
-
     const openMsg = this.shellChannel.buildOpenSession(0);
-
     await this.sendEncrypted(openMsg);
-}
+  }
 
   private getChannelIDFromPayload(payload: Uint8Array): number {
     // Most channel messages have recipient_channel at offset 1
@@ -1185,7 +1079,6 @@ this.sendDebug(
             if (this.state === 'shell-requested') {
               this.state = 'ready';
               this.sendStatus('Shell 已就绪', 'shell_ready');
-              
             }
           }, 3000);
         } else if (channelID === this.shellChannel.getLocalChannelID() && this.state === 'shell-requested') {
@@ -1195,17 +1088,7 @@ this.sendDebug(
             this.shellReadyTimeout = null;
           }
           this.state = 'ready';
-
-          this.sendStatus(
-           'Shell 已就绪',
-           'shell_ready'
-          );
-
-        this.sendDebug(
-           "start collect server info"
-      );
-
-
+          this.sendStatus('Shell 已就绪', 'shell_ready');
         } else if (this.sftpHandler && channelID === this.sftpHandler.getChannelID()) {
           // SFTP subsystem request confirmed - send SFTP init
           this.sendDebug(`SFTP CHANNEL_SUCCESS received, calling onSubsystemReady`);
@@ -1258,7 +1141,6 @@ this.sendDebug(
             }
             this.state = 'ready';
             this.sendStatus('Shell 已就绪', 'shell_ready');
-            
           }
           const outputData = channel.handleChannelData(payload);
           try { this.ws.send(outputData); } catch (e) { this.sendDebug(() => `Send shell output failed: ${e instanceof Error ? e.message : e}`); }
@@ -1809,23 +1691,12 @@ this.sendDebug(
   }
 
   private sendDebug(message: string | (() => string)): void {
-
-    const msg =
-        typeof message === 'function'
-            ? message()
-            : message;
-
-
+    if (!this.debugMode) return;
     try {
-        this.ws.send(JSON.stringify({
-            type: "debug",
-            message: msg
-        }));
-    } catch {
-
+      this.ws.send(JSON.stringify({ type: 'debug', message: typeof message === 'function' ? message() : message }));
+    } catch (e) {
+      // WebSocket 已关闭，调试消息无法送达
     }
-
-
   }
 
   // ==================== Agent Integration ====================
@@ -1898,60 +1769,6 @@ this.sendDebug(
       return null;
     }
   }
-
-  private async collectServerInfo(): Promise<void> {
-
-  this.sendDebug("collectServerInfo start");
-
-  if (this.serverInfoCollected) {
-    return;
-  }
-
-  this.serverInfoCollected = true;
-
-
-  try {
-
-    const result = await this.executeAgentCommand(
-     `echo CLOUDSSH_TEST`,
-      10000
-   );
-
-
-    if(result.exitCode !== 0){
-
-      this.sendDebug(
-        "server info command failed"
-      );
-
-      return;
-
-    }
-
-
-    this.sendDebug(
-      "server info raw: " + result.stdout
-    );
-
-
-    this.ws.send(JSON.stringify({
-
-      type: "server_info",
-
-      data: result.stdout
-
-    }));
-
-
-  } catch(e){
-
-    this.sendDebug(
-      "server info error: " + String(e)
-    );
-
-  }
-
-}
 
   private async executeAgentCommand(
     command: string,

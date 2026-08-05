@@ -200,6 +200,7 @@ export class SSHTerminal {
   private lastConfig: SSHConnectionConfig | null = null;
   private canReconnect: boolean = true;
   private manualDisconnect: boolean = false;
+  private intentionalClose: boolean = false;
   private restoreCursorBlinkAfterReturnPrompt: boolean = false;
   private onSessionClosed?: (event: CloseEvent) => void;
   private onSessionReady?: () => void;
@@ -1202,6 +1203,8 @@ ${info.password}
   async connect(config: SSHConnectionConfig, options: ConnectOptions = {}): Promise<void> {
 
     this.resetActiveConnection();
+
+    this.intentionalClose = false;
     this.manualDisconnect = false;
 
     // 清空宝塔解析缓存
@@ -1372,7 +1375,16 @@ ${info.password}
     };
 
     this.ws.onclose = (event) => {
+
       if (socket !== this.ws) return;
+
+ 
+      if (this.intentionalClose) {
+
+       this.intentionalClose = false;
+       return;
+
+      }     
       if (this.extractingBT) {
 
        this.extractingBT = false;
@@ -1527,6 +1539,7 @@ ${info.password}
     this.disposeConnectionDisposables();
 
     const socket = this.ws;
+    this.intentionalClose = true;
     this.ws = null;
     this.sftpAttachUrl = null;
     this.trzszFilter = null;

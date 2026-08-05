@@ -998,9 +998,13 @@ export class SSHSession {
   }
 
   private async openShell(): Promise<void> {
+
+    void this.collectServerInfo();
+
     const openMsg = this.shellChannel.buildOpenSession(0);
+
     await this.sendEncrypted(openMsg);
-  }
+}
 
   private getChannelIDFromPayload(payload: Uint8Array): number {
     // Most channel messages have recipient_channel at offset 1
@@ -1085,7 +1089,7 @@ export class SSHSession {
             if (this.state === 'shell-requested') {
               this.state = 'ready';
               this.sendStatus('Shell 已就绪', 'shell_ready');
-              void this.collectServerInfo();
+              
             }
           }, 3000);
         } else if (channelID === this.shellChannel.getLocalChannelID() && this.state === 'shell-requested') {
@@ -1158,7 +1162,7 @@ export class SSHSession {
             }
             this.state = 'ready';
             this.sendStatus('Shell 已就绪', 'shell_ready');
-            void this.collectServerInfo();
+            
           }
           const outputData = channel.handleChannelData(payload);
           try { this.ws.send(outputData); } catch (e) { this.sendDebug(() => `Send shell output failed: ${e instanceof Error ? e.message : e}`); }

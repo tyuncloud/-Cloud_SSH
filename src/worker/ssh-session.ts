@@ -785,8 +785,25 @@ case SSH_MSG_NEWKEYS: {
       cipherS2C.ivLength,
       macC2S.keyLength,
       macS2C.keyLength
-    );
-    this.sendDebug('Keys derived, waiting for NEWKEYS');
+);
+
+
+if (!this.derivedKeys) {
+
+  this.sendDebug(
+    'Key derivation failed: derivedKeys is null'
+  );
+
+  this.close();
+
+  return;
+
+}
+
+
+this.sendDebug(
+  'Keys derived OK, waiting for NEWKEYS'
+);
   }
 
   private async verifyHostKeySignature(

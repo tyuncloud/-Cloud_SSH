@@ -776,8 +776,7 @@ case SSH_MSG_NEWKEYS: {
     const cipherS2C = getCipherSpec(this.negotiatedCipherS2C);
     const macC2S = getMacSpec(this.negotiatedMacC2S);
     const macS2C = getMacSpec(this.negotiatedMacS2C);
-
-    this.derivedKeys = await KeyDerivation.deriveKeys(
+this.derivedKeys = await KeyDerivation.deriveKeys(
       sharedSecret,
       H,
       this.sessionID!,
@@ -804,6 +803,7 @@ if (!this.derivedKeys) {
 this.sendDebug(
   'Keys derived OK, waiting for NEWKEYS'
 );
+
   }
 
   private async verifyHostKeySignature(
@@ -974,6 +974,14 @@ this.sendDebug(
   }
 
   private async enableEncryption(): Promise<void> {
+
+    if (!this.derivedKeys) {
+
+      throw new Error(
+        'derivedKeys is null before enableEncryption'
+      );
+
+    }
     const keys = this.derivedKeys!;
     const cipherC2S = getCipherSpec(this.negotiatedCipherC2S);
     const cipherS2C = getCipherSpec(this.negotiatedCipherS2C);

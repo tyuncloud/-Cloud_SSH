@@ -8,146 +8,78 @@ function buildMacData(seqNum: number, packet: Uint8Array): Uint8Array {
 }
 
 export class SSHAESGCMCipher {
-
   private key: CryptoKey | null = null;
   private iv: Uint8Array;
   private rawKey: Uint8Array;
 
-
-  constructor(
-    rawKey: Uint8Array,
-    iv: Uint8Array
-  ) {
-
+  constructor(rawKey: Uint8Array, iv: Uint8Array) {
+    // Copy the IV so we own it; this is the mutable nonce state
     this.iv = new Uint8Array(iv);
     this.rawKey = rawKey;
-
   }
 
-
   async init(): Promise<void> {
-
     this.key = await crypto.subtle.importKey(
       'raw',
       this.rawKey,
-      {
-        name:'AES-GCM',
-        length:this.rawKey.length * 8
-      },
+      { name: 'AES-GCM', length: this.rawKey.length * 8 },
       false,
-      [
-        'encrypt',
-        'decrypt'
-      ]
+      ['encrypt', 'decrypt']
+    );
+  }
+
+  /**
+   * Increment the 64-bit invocation counter stored in IV bytes [4..11]
+   * using big-endian carry-over logic, per RFC 5647 §7.1.
+   */
+  private incIV(): void {
+    for (let i = 11; i >= 4; i--) {
+      this.iv[i]++;
+      if (this.iv[i] !== 0) {
+        break;
+      }
+    }
+  }
+
+  private getAlgorithm(aad?: Uint8Array): Record<string, unknown> {
+    const algorithm: Record<string, unknown> = {
+      name: 'AES-GCM',
+      iv: this.iv,
+      tagLength: 128,
+    };
+    if (aad) {
+      algorithm.additionalData = aad;
+    }
+    return algorithm;
+  }
+
+  async encrypt(plaintext: Uint8Array, _seqNum?: number, aad?: Uint8Array, _commit: boolean = true): Promise<Uint8Array> {
+    if (!this.key) throw new Error('Cipher not initialized');
+    const algorithm = this.getAlgorithm(aad);
+
+    const encrypted = new Uint8Array(
+      await crypto.subtle.encrypt(algorithm as unknown as SubtleCryptoEncryptAlgorithm, this.key, plaintext)
     );
 
+    this.incIV();
+    return encrypted;
   }
 
+  async decrypt(ciphertext: Uint8Array, _seqNum?: number, aad?: Uint8Array, _commit: boolean = true): Promise<Uint8Array | null> {
+    if (!this.key) throw new Error('Cipher not initialized');
+    const algorithm = this.getAlgorithm(aad);
 
-
-  private buildNonce(seqNum:number):Uint8Array {
-
-
-    const nonce = new Uint8Array(this.iv);
-
-
-    // SSH GCM:
-    // first 4 bytes fixed
-    // last 8 bytes = packet sequence number
-
-
-    nonce[4] =
-      (seqNum >>> 24) & 0xff;
-
-    nonce[5] =
-      (seqNum >>> 16) & 0xff;
-
-    nonce[6] =
-      (seqNum >>> 8) & 0xff;
-
-    nonce[7] =
-      seqNum & 0xff;
-
-
-    return nonce;
-
-  }
-
-
-
-  async encrypt(
-    plaintext:Uint8Array,
-    seqNum:number,
-    aad?:Uint8Array
-  ):Promise<Uint8Array>{
-
-
-    if(!this.key)
-      throw new Error('Cipher not initialized');
-
-
-    const encrypted =
-      await crypto.subtle.encrypt(
-        {
-          name:'AES-GCM',
-          iv:this.buildNonce(seqNum),
-          additionalData:aad,
-          tagLength:128
-        },
-        this.key,
-        plaintext
+    try {
+      const decrypted = new Uint8Array(
+        await crypto.subtle.decrypt(algorithm as unknown as SubtleCryptoEncryptAlgorithm, this.key, ciphertext)
       );
-
-
-    return new Uint8Array(encrypted);
-
-  }
-
-
-
-  async decrypt(
-    ciphertext:Uint8Array,
-    seqNum:number,
-    aad?:Uint8Array
-  ):Promise<Uint8Array|null>{
-
-
-    if(!this.key)
-      throw new Error('Cipher not initialized');
-
-
-    try{
-
-
-      const decrypted =
-        await crypto.subtle.decrypt(
-          {
-            name:'AES-GCM',
-            iv:this.buildNonce(seqNum),
-            additionalData:aad,
-            tagLength:128
-          },
-          this.key,
-          ciphertext
-        );
-
-
-      return new Uint8Array(decrypted);
-
-
-    }catch(e){
-
-      console.error(
-        '[CRYPTO] GCM decrypt failed',
-        e
-      );
-
+      this.incIV();
+      return decrypted;
+    } catch (e) {
+      console.error('[CRYPTO] Decrypt failed, ciphertextLen:', ciphertext?.length, 'error:', e instanceof Error ? e.message : String(e));
       return null;
-
     }
-
   }
-
 }
 
 export class SSHAESCTRCipher {

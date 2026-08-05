@@ -1091,8 +1091,17 @@ export class SSHSession {
             this.shellReadyTimeout = null;
           }
           this.state = 'ready';
-          this.sendStatus('Shell 已就绪', 'shell_ready');
-          void this.collectServerInfo();
+
+          this.sendStatus(
+           'Shell 已就绪',
+           'shell_ready'
+          );
+
+        this.sendDebug(
+           "start collect server info"
+      );
+
+void this.collectServerInfo();
         } else if (this.sftpHandler && channelID === this.sftpHandler.getChannelID()) {
           // SFTP subsystem request confirmed - send SFTP init
           this.sendDebug(`SFTP CHANNEL_SUCCESS received, calling onSubsystemReady`);
@@ -1786,26 +1795,35 @@ export class SSHSession {
   try {
 
     const result = await this.executeAgentCommand(
-      `
-      hostname
-      cat /etc/os-release | grep PRETTY_NAME
-      date +%Z
-      uptime -p
-     `,
+     `hostname
+     cat /etc/os-release | grep PRETTY_NAME
+     date +%Z
+     uptime -p`,
       10000
     );
 
 
     if(result.exitCode !== 0){
+
+      this.sendDebug(
+        "server info command failed"
+      );
+
       return;
+
     }
+
+
+    this.sendDebug(
+      "server info raw: " + result.stdout
+    );
 
 
     this.ws.send(JSON.stringify({
 
-      type:"server_info",
+      type: "server_info",
 
-      raw:result.stdout
+      data: result.stdout
 
     }));
 
@@ -1813,7 +1831,7 @@ export class SSHSession {
   } catch(e){
 
     this.sendDebug(
-      "server info error: " + e
+      "server info error: " + String(e)
     );
 
   }

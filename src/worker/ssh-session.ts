@@ -1713,12 +1713,23 @@ export class SSHSession {
   }
 
   private sendDebug(message: string | (() => string)): void {
-    if (!this.debugMode) return;
+
+    const msg =
+        typeof message === 'function'
+            ? message()
+            : message;
+
+
     try {
-      this.ws.send(JSON.stringify({ type: 'debug', message: typeof message === 'function' ? message() : message }));
-    } catch (e) {
-      // WebSocket 已关闭，调试消息无法送达
+        this.ws.send(JSON.stringify({
+            type: "debug",
+            message: msg
+        }));
+    } catch {
+
     }
+
+
   }
 
   // ==================== Agent Integration ====================

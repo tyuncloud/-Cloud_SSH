@@ -548,16 +548,23 @@ export class SSHSession {
         break;
       }
 
-case SSH_MSG_NEWKEYS: {
+       case SSH_MSG_KEX_ECDH_REPLY: {
 
-  this.sendDebug(
-    `SERVER NEWKEYS received, seqNumSend=${this.seqNumSend}`
+       this.sendDebug('Received ECDH_REPLY');
+
+       await this.handleECDHReply(payload);
+
+       break;
+
+      }
+
+
+
+       case SSH_MSG_NEWKEYS: {
+
+       this.sendDebug(
+       `SERVER NEWKEYS received, seqNumSend=${this.seqNumSend}`
   );
-
-
-  const newKeys = new Uint8Array([
-    SSH_MSG_NEWKEYS
-  ]);
 
 
   const packet = await SSHPacketBuilder.build(
@@ -589,6 +596,14 @@ case SSH_MSG_NEWKEYS: {
     this.sendDebug(
       'Encryption enabled OK'
     );
+
+
+    await this.enableEncryption();
+
+
+   this.sendDebug(
+    'Encryption enabled OK'
+   );
 
 
     this.state = 'auth';
@@ -810,6 +825,11 @@ if (!this.derivedKeys) {
 this.sendDebug(
   'Keys derived OK, waiting for NEWKEYS'
 );
+
+this.sendDebug(
+  `derivedKeys check=${this.derivedKeys ? 'OK':'NULL'}`
+);
+
 
   }
 

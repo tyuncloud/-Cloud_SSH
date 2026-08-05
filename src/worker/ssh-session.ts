@@ -562,21 +562,27 @@ export class SSHSession {
 
        case SSH_MSG_NEWKEYS: {
 
-       this.sendDebug(
-       `SERVER NEWKEYS received, seqNumSend=${this.seqNumSend}`
+  this.sendDebug(
+    `SERVER NEWKEYS received, seqNumSend=${this.seqNumSend}`
   );
 
 
+  const clientNewKeys = new Uint8Array([
+    SSH_MSG_NEWKEYS
+  ]);
+
+
   const packet = await SSHPacketBuilder.build(
-    newKeys,
+    clientNewKeys,
     8,
     null,
     this.seqNumSend
   );
 
 
-  this.seqNumSend =
-    nextSequenceNumber(this.seqNumSend);
+  this.seqNumSend = nextSequenceNumber(
+    this.seqNumSend
+  );
 
 
   await this.writeSocket(packet);
@@ -587,42 +593,28 @@ export class SSHSession {
   );
 
 
-
   try {
 
     await this.enableEncryption();
 
 
     this.sendDebug(
-      'Encryption enabled OK'
+      'Encryption enabled'
     );
-
-
-    await this.enableEncryption();
-
-
-   this.sendDebug(
-    'Encryption enabled OK'
-   );
 
 
     this.state = 'auth';
-
-
-    this.sendDebug(
-      'STATE changed to AUTH'
-    );
 
 
     await this.sendServiceRequest();
 
 
     this.sendDebug(
-      'SERVICE_REQUEST sent OK'
+      'SERVICE_REQUEST sent successfully'
     );
 
 
-  } catch (e) {
+  } catch(e) {
 
 
     const errMsg =
@@ -631,17 +623,13 @@ export class SSHSession {
         : String(e);
 
 
-    this.sendDebug(
-      `NEWKEYS process failed: ${errMsg}`
-    );
-
-
     this.sendError(
-      'NEWKEYS 处理失败: ' + errMsg
+      'NEWKEYS处理失败: ' + errMsg
     );
 
 
     this.close();
+
 
   }
 
@@ -649,6 +637,7 @@ export class SSHSession {
   break;
 
 }
+
       case SSH_MSG_UNIMPLEMENTED:
         this.sendDebug('Server sent UNIMPLEMENTED');
         break;

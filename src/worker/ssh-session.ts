@@ -776,6 +776,10 @@ case SSH_MSG_NEWKEYS: {
     const cipherS2C = getCipherSpec(this.negotiatedCipherS2C);
     const macC2S = getMacSpec(this.negotiatedMacC2S);
     const macS2C = getMacSpec(this.negotiatedMacS2C);
+
+    this.sendDebug(
+  "Before deriveKeys"
+);
 this.derivedKeys = await KeyDerivation.deriveKeys(
       sharedSecret,
       H,
@@ -787,9 +791,8 @@ this.derivedKeys = await KeyDerivation.deriveKeys(
 );
 
 this.sendDebug(
-  "DERIVED KEYS CREATED"
+  "After deriveKeys"
 );
-
 
 if (!this.derivedKeys) {
 

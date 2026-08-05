@@ -786,6 +786,10 @@ this.derivedKeys = await KeyDerivation.deriveKeys(
       macS2C.keyLength
 );
 
+this.sendDebug(
+  "DERIVED KEYS CREATED"
+);
+
 
 if (!this.derivedKeys) {
 

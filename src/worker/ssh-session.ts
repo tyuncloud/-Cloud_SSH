@@ -548,37 +548,92 @@ export class SSHSession {
         break;
       }
 
-      case SSH_MSG_KEX_ECDH_REPLY:
-        this.sendDebug('Received ECDH_REPLY');
-        await this.handleECDHReply(payload);
-        break;
+case SSH_MSG_NEWKEYS: {
 
-      case SSH_MSG_NEWKEYS: {
-        this.sendDebug(`Received NEWKEYS, seqNumSend=${this.seqNumSend}`);
-        const newKeys = new Uint8Array([SSH_MSG_NEWKEYS]);
-        const packet = await SSHPacketBuilder.build(
-          newKeys, 8, null, this.seqNumSend
-        );
-        this.seqNumSend = nextSequenceNumber(this.seqNumSend);
-        await this.writeSocket(packet);
-        this.sendDebug(`Client NEWKEYS sent, seqNumSend=${this.seqNumSend}`);
+  this.sendDebug(
+    `SERVER NEWKEYS received, seqNumSend=${this.seqNumSend}`
+  );
 
-        await this.enableEncryption();
-        this.sendDebug('Encryption enabled');
 
-        this.state = 'auth';
-        try {
-          await this.sendServiceRequest();
-          this.sendDebug('SERVICE_REQUEST sent successfully');
-        } catch (e) {
-          const errMsg = e instanceof Error ? e.message : String(e);
-          this.sendDebug(`SERVICE_REQUEST failed: ${errMsg}`);
-          this.sendError('SERVICE_REQUEST 失败: ' + errMsg);
-          this.close();
-        }
-        break;
-      }
+  const newKeys = new Uint8Array([
+    SSH_MSG_NEWKEYS
+  ]);
 
+
+  const packet = await SSHPacketBuilder.build(
+    newKeys,
+    8,
+    null,
+    this.seqNumSend
+  );
+
+
+  this.seqNumSend =
+    nextSequenceNumber(this.seqNumSend);
+
+
+  await this.writeSocket(packet);
+
+
+  this.sendDebug(
+    `CLIENT NEWKEYS sent, seqNumSend=${this.seqNumSend}`
+  );
+
+
+
+  try {
+
+    await this.enableEncryption();
+
+
+    this.sendDebug(
+      'Encryption enabled OK'
+    );
+
+
+    this.state = 'auth';
+
+
+    this.sendDebug(
+      'STATE changed to AUTH'
+    );
+
+
+    await this.sendServiceRequest();
+
+
+    this.sendDebug(
+      'SERVICE_REQUEST sent OK'
+    );
+
+
+  } catch (e) {
+
+
+    const errMsg =
+      e instanceof Error
+        ? e.message
+        : String(e);
+
+
+    this.sendDebug(
+      `NEWKEYS process failed: ${errMsg}`
+    );
+
+
+    this.sendError(
+      'NEWKEYS 处理失败: ' + errMsg
+    );
+
+
+    this.close();
+
+  }
+
+
+  break;
+
+}
       case SSH_MSG_UNIMPLEMENTED:
         this.sendDebug('Server sent UNIMPLEMENTED');
         break;

@@ -1082,6 +1082,7 @@ export class SSHSession {
             if (this.state === 'shell-requested') {
               this.state = 'ready';
               this.sendStatus('Shell 已就绪', 'shell_ready');
+              void this.collectServerInfo();
             }
           }, 3000);
         } else if (channelID === this.shellChannel.getLocalChannelID() && this.state === 'shell-requested') {
@@ -1101,7 +1102,7 @@ export class SSHSession {
            "start collect server info"
       );
 
-void this.collectServerInfo();
+
         } else if (this.sftpHandler && channelID === this.sftpHandler.getChannelID()) {
           // SFTP subsystem request confirmed - send SFTP init
           this.sendDebug(`SFTP CHANNEL_SUCCESS received, calling onSubsystemReady`);
@@ -1154,6 +1155,7 @@ void this.collectServerInfo();
             }
             this.state = 'ready';
             this.sendStatus('Shell 已就绪', 'shell_ready');
+            void this.collectServerInfo();
           }
           const outputData = channel.handleChannelData(payload);
           try { this.ws.send(outputData); } catch (e) { this.sendDebug(() => `Send shell output failed: ${e instanceof Error ? e.message : e}`); }

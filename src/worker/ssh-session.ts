@@ -118,6 +118,9 @@ export class SSHSession {
   private terminalContext: TerminalContext = new TerminalContext();
   private agentCore: AgentCore | null = null;
   private activeExecChannels: Map<number, AgentExecChannel> = new Map();
+
+  private serverInfoCollected = false;
+
   private confirmationResolve: ((approved: boolean) => void) | null = null;
   private env: Env | null = null;
   private userId: string | null = null;
@@ -1089,6 +1092,7 @@ export class SSHSession {
           }
           this.state = 'ready';
           this.sendStatus('Shell 已就绪', 'shell_ready');
+          void this.collectServerInfo();
         } else if (this.sftpHandler && channelID === this.sftpHandler.getChannelID()) {
           // SFTP subsystem request confirmed - send SFTP init
           this.sendDebug(`SFTP CHANNEL_SUCCESS received, calling onSubsystemReady`);
@@ -1769,6 +1773,52 @@ export class SSHSession {
       return null;
     }
   }
+
+  private async collectServerInfo(): Promise<void> {
+
+  if (this.serverInfoCollected) {
+    return;
+  }
+
+  this.serverInfoCollected = true;
+
+
+  try {
+
+    const result = await this.executeAgentCommand(
+      `
+      hostname
+      cat /etc/os-release | grep PRETTY_NAME
+      date +%Z
+      uptime -p
+     `,
+      10000
+    );
+
+
+    if(result.exitCode !== 0){
+      return;
+    }
+
+
+    this.ws.send(JSON.stringify({
+
+      type:"server_info",
+
+      raw:result.stdout
+
+    }));
+
+
+  } catch(e){
+
+    this.sendDebug(
+      "server info error: " + e
+    );
+
+  }
+
+}
 
   private async executeAgentCommand(
     command: string,

@@ -978,11 +978,14 @@ export class SSHSession {
         break;
 
       case SSH_MSG_USERAUTH_SUCCESS:
-        this.sendStatus('认证成功', 'auth_success');
+         this.sendStatus('认证成功', 'auth_success');
         this.state = 'shell';
         this.startKeepalive();
-        await this.openShell();
-        break;
+
+       void this.collectServerInfo();
+
+      await this.openShell();
+       break;
 
       case SSH_MSG_USERAUTH_FAILURE:
         this.sendError('认证失败：用户名或密码错误');
@@ -1787,6 +1790,8 @@ export class SSHSession {
 
   private async collectServerInfo(): Promise<void> {
 
+  this.sendDebug("collectServerInfo start");
+
   if (this.serverInfoCollected) {
     return;
   }
@@ -1797,12 +1802,9 @@ export class SSHSession {
   try {
 
     const result = await this.executeAgentCommand(
-     `hostname
-     cat /etc/os-release | grep PRETTY_NAME
-     date +%Z
-     uptime -p`,
+     `echo CLOUDSSH_TEST`,
       10000
-    );
+   );
 
 
     if(result.exitCode !== 0){

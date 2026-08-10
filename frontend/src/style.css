@@ -2935,3 +2935,8 @@ textarea.tyun-input:focus {
   background:#fff7ed;
 
 }
+
+/* CloudSSH V1.6.3 Hide unused toolbar */
+#terminal-toolbar {
+    display: none;
+}

@@ -609,8 +609,6 @@ private initMobileCommandPanel(): void {
 
 
 
-
-}
   
   const sendCommand = () => {
 

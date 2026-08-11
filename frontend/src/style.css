@@ -4950,3 +4950,198 @@ textarea.tyun-input:focus {
 
 
 }
+
+/* =====================================
+   CloudSSH Node Status Final Fix V3
+===================================== */
+
+
+.cloudssh-status-panel{
+
+    margin-top:22px !important;
+
+    width:100% !important;
+
+}
+
+
+
+.node-status-card{
+
+
+    height:70px !important;
+
+    width:100% !important;
+
+
+    padding:0 18px !important;
+
+
+    background:#ffffff !important;
+
+
+    border-radius:18px !important;
+
+
+    box-shadow:
+    0 10px 30px rgba(0,0,0,.08);
+
+
+    display:flex !important;
+
+
+    align-items:center !important;
+
+
+    justify-content:space-between !important;
+
+
+}
+
+
+
+/* 左侧状态 */
+
+.node-main{
+
+
+    width:45% !important;
+
+
+    display:flex !important;
+
+
+    align-items:center !important;
+
+
+    gap:12px !important;
+
+
+}
+
+
+.node-light{
+
+
+    width:16px !important;
+
+    height:16px !important;
+
+
+}
+
+
+
+.node-info span{
+
+
+    font-size:12px !important;
+
+
+}
+
+
+.node-info strong{
+
+
+    font-size:16px !important;
+
+
+    line-height:18px !important;
+
+
+}
+
+
+.node-info small{
+
+
+    font-size:11px !important;
+
+
+}
+
+
+
+
+
+/* 中间延迟 */
+
+
+.node-metric{
+
+
+    width:25% !important;
+
+
+    height:40px !important;
+
+
+    padding-left:0 !important;
+
+
+    border-left:1px solid #eeeeee !important;
+
+
+    display:flex !important;
+
+
+    align-items:center !important;
+
+
+    justify-content:center !important;
+
+
+}
+
+
+
+
+/* 右侧节点 */
+
+
+.node-item{
+
+
+    width:30% !important;
+
+
+    height:40px !important;
+
+
+    padding-left:0 !important;
+
+
+    border-left:1px solid #eeeeee !important;
+
+
+    display:flex !important;
+
+
+    align-items:center !important;
+
+
+    justify-content:center !important;
+
+
+}
+
+
+
+.node-metric span,
+.node-item span{
+
+
+    font-size:11px !important;
+
+}
+
+
+
+.node-metric strong,
+.node-item b{
+
+
+    font-size:15px !important;
+
+}

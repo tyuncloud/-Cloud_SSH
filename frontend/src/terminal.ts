@@ -1664,7 +1664,6 @@ ${info.password}
 }
 
 
-}
       } else {
         this.trzszFilter!.processServerOutput(event.data);
       }

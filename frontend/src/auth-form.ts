@@ -263,41 +263,69 @@ export class ConnectionForm {
     <div class="node-status-card">
 
 
-        <div class="node-light"></div>
+<div class="node-health">
 
 
-        <div class="node-info">
-
-            <span>
-                节点状态
-            </span>
+<div class="node-light"></div>
 
 
-            <strong>
-                ONLINE
-            </strong>
+<div class="node-info">
 
-            <small>
-      连接正常，服务可用
-       </small>
+<span>
+节点状态
+</span>
 
 
-        </div>
+<strong>
+ONLINE
+</strong>
+
+
+<small>
+服务正常
+</small>
+
+
+</div>
+
+
+</div>
 
 
 
-        <div class="node-delay">
-
-            延迟
-
-            <b>
-                28ms
-            </b>
-
-        </div>
+<div class="node-item">
 
 
-    </div>
+<span>
+延迟
+</span>
+
+
+<b>
+28 ms</b>
+
+
+</div>
+
+
+
+<div class="node-item">
+
+
+<span>
+节点
+</span>
+
+
+<b>
+自动选择</b>
+
+
+</div>
+
+
+</div>
+
 
 
 </div>

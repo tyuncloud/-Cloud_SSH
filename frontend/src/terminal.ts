@@ -1431,10 +1431,25 @@ ${info.password}
             case 'status':
               this.terminal.writeln(`\x1b[32m[*] ${msg.message}\x1b[0m`);
               if (msg.event === 'auth_success' || msg.message === '认证成功') {
-                this.reconnectAttempts = 0;
-                const statusText = document.getElementById('status-text');
-                if (statusText) statusText.innerHTML = '<span class="w-2 h-2 bg-[var(--accent)] inline-block animate-pulse"></span> STATUS: ONLINE';
-              }
+
+    this.reconnectAttempts = 0;
+
+
+    // 更新左侧 Connection 信息
+    this.updateConnectionInfo();
+
+
+    const statusText = document.getElementById('status-text');
+
+
+    if (statusText) {
+
+        statusText.innerHTML =
+        '<span class="w-2 h-2 bg-[var(--accent)] inline-block animate-pulse"></span> STATUS: ONLINE';
+
+    }
+
+}
               if (msg.event === 'shell_ready' || msg.message === 'Shell 已就绪') {
                 this.onSessionReady?.();
               }

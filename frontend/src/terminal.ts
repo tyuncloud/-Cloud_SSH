@@ -204,22 +204,13 @@ export class SSHTerminal {
 
 
     const host =
-        document.getElementById('server-host');
-    console.log(
-"host元素:",
-host
-);
-
-console.log(
-"当前配置:",
-this.lastConfig
-);
+document.getElementById('connection-host');
 
     const user =
         document.getElementById('server-user');
 
     const port =
-        document.getElementById('server-port');
+document.getElementById('connection-port');
 
     const auth =
         document.getElementById('server-auth');

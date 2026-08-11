@@ -293,21 +293,35 @@ document.getElementById('connection-port');
   private onLatencyUpdated?: (cfLatency: number | null, cfColo: string | null, wsLatency: number | null) => void;
   private resizeListener: () => void;
 
-  constructor(containerId: string) {
-    this.container = document.getElementById(containerId)!;
-    this.resizeListener = () => this.fit();
+ constructor(containerId: string) {
 
-    this.terminal = new Terminal({
-      cursorBlink: true,
-      cursorStyle: 'block',
-      fontSize: 13,
-      fontFamily: '"JetBrains Mono", "Fira Code", "Cascadia Code", monospace',
-      theme: THEMES.cloudssh,
-      allowProposedApi: true,
-      scrollback: 10000,
-      this.initQuickActionButtons();
-    });
+  this.container = document.getElementById(containerId)!;
 
+  this.resizeListener = () => this.fit();
+
+
+  this.terminal = new Terminal({
+
+    cursorBlink: true,
+
+    cursorStyle: 'block',
+
+    fontSize: 13,
+
+    fontFamily: '"JetBrains Mono", "Fira Code", "Cascadia Code", monospace',
+
+    theme: THEMES.cloudssh,
+
+    allowProposedApi: true,
+
+    scrollback: 10000,
+
+  });
+
+
+  this.initQuickActionButtons();
+
+}
     this.fitAddon = new FitAddon();
     this.terminal.loadAddon(this.fitAddon);
     this.terminal.loadAddon(new WebLinksAddon());

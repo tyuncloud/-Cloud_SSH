@@ -305,6 +305,7 @@ document.getElementById('connection-port');
       theme: THEMES.cloudssh,
       allowProposedApi: true,
       scrollback: 10000,
+      this.initQuickActionButtons();
     });
 
     this.fitAddon = new FitAddon();
@@ -592,7 +593,147 @@ private initMobileCommandPanel(): void {
     return;
   }
 
+// ==================== 快捷操作按钮 ====================
 
+private initQuickActionButtons(): void {
+
+
+  // 复制 SSH 连接
+
+  const copySSH =
+  document.getElementById('copy-ssh-btn');
+
+
+  if(copySSH){
+
+    copySSH.onclick = async()=>{
+
+
+      if(!this.lastConfig)
+        return;
+
+
+      const ssh =
+      `ssh ${this.lastConfig.username}@${this.lastConfig.host} -p ${this.lastConfig.port}`;
+
+
+      await navigator.clipboard.writeText(ssh);
+
+
+      copySSH.innerHTML =
+      "✅ 已复制";
+
+
+      setTimeout(()=>{
+
+        copySSH.innerHTML =
+        "📋 复制 SSH 连接";
+
+      },1500);
+
+
+    };
+
+  }
+
+
+
+
+
+  // 查看磁盘
+
+  const disk =
+  document.getElementById('disk-info-btn');
+
+
+  if(disk){
+
+    disk.onclick=()=>{
+
+      this.sendWebSocketMessage(
+        "df -h\n"
+      );
+
+    };
+
+  }
+
+
+
+
+
+  // 查看内存
+
+  const memory =
+  document.getElementById('memory-info-btn');
+
+
+  if(memory){
+
+    memory.onclick=()=>{
+
+
+      this.sendWebSocketMessage(
+        "free -m\n"
+      );
+
+
+    };
+
+  }
+
+
+
+
+
+  // 系统信息
+
+  const system =
+  document.getElementById('system-info-btn');
+
+
+  if(system){
+
+    system.onclick=()=>{
+
+
+      this.sendWebSocketMessage(
+        "uname -a\n"
+      );
+
+
+    };
+
+  }
+
+
+
+
+
+  // 宝塔面板
+
+  const bt =
+  document.getElementById('bt-panel-btn');
+
+
+  if(bt){
+
+    bt.onclick=()=>{
+
+
+      this.sendWebSocketMessage(
+        "bt\n"
+      );
+
+
+    };
+
+  }
+
+
+
+}
+  
   const sendCommand = () => {
 
     const command = input.value.trim();

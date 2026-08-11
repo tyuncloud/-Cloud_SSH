@@ -306,7 +306,7 @@ document.getElementById('connection-port');
 
     cursorStyle: 'block',
 
-    fontSize: 13,
+    fontSize: window.innerWidth <= 768 ? 11 : 13,
 
     fontFamily: '"JetBrains Mono", "Fira Code", "Cascadia Code", monospace',
 
@@ -482,6 +482,12 @@ if (terminalElement) {
     }
 
     this.fit();
+
+setTimeout(()=>{
+
+    this.fit();
+
+},300);
 
 
  }

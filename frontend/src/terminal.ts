@@ -204,37 +204,74 @@ export class SSHTerminal {
 
 
     const host =
-    document.getElementById('server-host');
+        document.getElementById('server-host');
 
     const user =
-    document.getElementById('server-user');
+        document.getElementById('server-user');
 
     const port =
-    document.getElementById('server-port');
+        document.getElementById('server-port');
 
     const auth =
-    document.getElementById('server-auth');
+        document.getElementById('server-auth');
 
 
-    if(host)
-        host.innerText=this.lastConfig.host;
+    // 地址
+    if (host) {
+
+        host.innerText =
+            this.lastConfig.host
+            ||
+            (this.lastConfig as any).hostname
+            ||
+            (this.lastConfig as any).serverHost
+            ||
+            '--';
+
+    }
 
 
-    if(user)
-        user.innerText=this.lastConfig.username;
+    // 用户
+    if (user) {
+
+        user.innerText =
+            this.lastConfig.username
+            ||
+            (this.lastConfig as any).user
+            ||
+            'root';
+
+    }
 
 
-    if(port)
-        port.innerText=String(this.lastConfig.port);
+    // SSH端口
+    if (port) {
+
+        port.innerText =
+            String(
+                this.lastConfig.port
+                ||
+                (this.lastConfig as any).sshPort
+                ||
+                (this.lastConfig as any).serverPort
+                ||
+                22
+            );
+
+    }
 
 
-    if(auth)
-        auth.innerText=
-        this.lastConfig.authMethod === 'publickey'
-        ?
-        'SSH Key'
-        :
-        'Password';
+    // 登录方式
+    if (auth) {
+
+        auth.innerText =
+            this.lastConfig.authMethod === 'publickey'
+            ?
+            'SSH Key'
+            :
+            'Password';
+
+    }
 
 }
   private canReconnect: boolean = true;

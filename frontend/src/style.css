@@ -3090,3 +3090,20 @@ textarea.tyun-input:focus {
 
 
 }
+
+/* 手机端隐藏服务器信息和快捷操作 */
+
+@media(max-width:768px){
+
+    .mobile-hide-sidebar{
+        display:none !important;
+    }
+
+
+    .mobile-hide-actions{
+        display:none !important;
+    }
+
+}
+
+

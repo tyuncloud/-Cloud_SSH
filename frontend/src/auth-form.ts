@@ -190,9 +190,19 @@ export class ConnectionForm {
 
     <div class="terminal-header">
 
-        CloudSSH Terminal
-
+    <div class="terminal-dots">
+        <span></span>
+        <span></span>
+        <span></span>
     </div>
+
+
+    <span>
+        CloudSSH Terminal
+    </span>
+
+
+</div>
 
 
 
@@ -201,7 +211,7 @@ export class ConnectionForm {
 
         <div class="terminal-command">
 
-            root@cloudssh:~$ ssh server
+            root@tyun:~# ssh server
 
         </div>
 
@@ -215,23 +225,30 @@ export class ConnectionForm {
 
         <div class="terminal-success">
 
-            ✓ SSH handshake completed
+    ✓ SSH handshake completed
 
-        </div>
-
-
-        <div class="terminal-success">
-
-            ✓ Terminal session ready
-
-        </div>
+</div>
 
 
-        <div class="terminal-cursor">
+<div class="terminal-success">
 
-            _
+    ✓ AES encryption enabled
 
-        </div>
+</div>
+
+
+<div class="terminal-success">
+
+    ✓ Terminal session ready
+
+</div>
+
+
+<div class="terminal-cursor">
+
+    _
+
+</div>
 
 
     </div>

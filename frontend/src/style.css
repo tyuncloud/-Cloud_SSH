@@ -3027,14 +3027,18 @@ textarea.tyun-input:focus {
    手机端 Terminal 优化
 ========================== */
 
-@media (max-width: 768px){
+/* ==========================
+ CloudSSH Mobile Terminal Only
+ 手机端只显示Terminal
+========================== */
+
+
+@media(max-width:768px){
 
 
 /* 隐藏左侧服务器信息 */
-#server-info,
-.server-info,
-.connection-panel,
-.sidebar {
+
+#server-sidebar{
 
     display:none !important;
 
@@ -3042,32 +3046,25 @@ textarea.tyun-input:focus {
 
 
 
-/* 主布局取消左右结构 */
-#terminal-section .flex {
+/* 主区域恢复单列 */
 
-    display:block !important;
+#terminal-section .flex.flex-1{
 
-}
+    display:flex !important;
 
-
-
-/* Terminal 占满屏幕 */
-
-.terminal-container,
-#terminal-container {
-
-    width:100% !important;
-    height:calc(100vh - 130px) !important;
+    flex-direction:column !important;
 
 }
 
 
 
-/* 终端区域 */
+/* Terminal占满 */
 
-.xterm {
+#terminal-container-wrapper{
 
     width:100% !important;
+
+    height:100% !important;
 
 }
 
@@ -3075,51 +3072,9 @@ textarea.tyun-input:focus {
 
 /* 输入区域 */
 
-.terminal-input-area {
-
-    position:fixed;
-    bottom:0;
-    left:0;
+#terminal-section .terminal-input-area{
 
     width:100% !important;
-
-    padding:8px;
-
-    background:#fffaf5;
-
-}
-
-
-
-/* 输入框 */
-
-.terminal-input-area input {
-
-    flex:1;
-
-    font-size:16px;
-
-}
-
-
-
-/* 发送按钮隐藏 */
-
-#send-btn {
-
-    display:none !important;
-
-}
-
-
-
-/* 提取宝塔按钮 */
-
-#extract-btn {
-
-    display:block !important;
-
-    width:90px;
 
 }
 
@@ -3127,9 +3082,9 @@ textarea.tyun-input:focus {
 
 /* Footer隐藏 */
 
-footer {
+#terminal-section footer{
 
-    display:none;
+    display:none !important;
 
 }
 

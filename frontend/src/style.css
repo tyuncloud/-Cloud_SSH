@@ -4767,3 +4767,186 @@ textarea.tyun-input:focus {
 
 
 }
+
+/* =====================================
+   CloudSSH Node Status Final Override
+   2026 Fix
+===================================== */
+
+
+.cloudssh-status-panel{
+
+    width:100% !important;
+
+    margin-top:15px !important;
+
+    display:flex !important;
+
+    justify-content:center !important;
+
+}
+
+
+
+.node-status-card{
+
+
+    width:100% !important;
+
+    height:72px !important;
+
+
+    display:flex !important;
+
+    align-items:center !important;
+
+    justify-content:space-between !important;
+
+
+    padding:12px 18px !important;
+
+
+    border-radius:18px !important;
+
+
+    box-sizing:border-box !important;
+
+
+    overflow:hidden !important;
+
+
+}
+
+
+
+/* 左侧 */
+
+
+.node-main{
+
+
+    display:flex !important;
+
+    align-items:center !important;
+
+    gap:12px !important;
+
+
+    flex:1;
+
+
+}
+
+
+
+.node-light{
+
+
+    width:14px !important;
+
+    height:14px !important;
+
+
+    flex:none;
+
+
+}
+
+
+
+.node-info{
+
+
+    display:flex !important;
+
+    flex-direction:column !important;
+
+
+}
+
+
+
+.node-info span{
+
+
+    font-size:12px !important;
+
+
+}
+
+
+
+.node-info strong{
+
+
+    font-size:17px !important;
+
+    line-height:20px !important;
+
+
+}
+
+
+
+.node-info small{
+
+
+    font-size:11px !important;
+
+
+}
+
+
+
+
+/* 延迟 / 节点 */
+
+
+.node-metric,
+.node-item{
+
+
+    height:40px !important;
+
+
+    min-width:90px;
+
+
+    padding-left:18px !important;
+
+
+    border-left:1px solid #e5e7eb !important;
+
+
+    display:flex !important;
+
+    flex-direction:column !important;
+
+    align-items:center !important;
+
+    justify-content:center !important;
+
+
+}
+
+
+
+.node-metric span,
+.node-item span{
+
+
+    font-size:11px !important;
+
+
+}
+
+
+
+.node-metric strong,
+.node-item b{
+
+
+    font-size:15px !important;
+
+
+}

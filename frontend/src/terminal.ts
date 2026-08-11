@@ -306,7 +306,7 @@ document.getElementById('connection-port');
 
     cursorStyle: 'block',
 
-    fontSize: 13,
+    fontSize: window.innerWidth <= 768 ? 12 : 13,
 
     fontFamily: '"JetBrains Mono", "Fira Code", "Cascadia Code", monospace',
 
@@ -483,16 +483,17 @@ if (terminalElement) {
 
     this.fit();
 
+
 setTimeout(()=>{
 
-    this.fit();
+ this.fit();
+
+ this.sendResize();
+
 
 },300);
 
-
- }
-
-   
+}  
 
 private showContextMenu(x: number, y: number): void {
 
@@ -1482,8 +1483,18 @@ ${info.password}
       this.ws.binaryType = 'arraybuffer';
 
       this.ws.onopen = () => {
-        this.terminal.writeln('\x1b[32m[+] WebSocket connected, sending credentials...\x1b[0m');
-        this.ws?.send(JSON.stringify({
+
+
+  // 手机端先计算终端尺寸
+  this.fit();
+
+
+  this.terminal.writeln(
+    '\x1b[32m[+] WebSocket connected, sending credentials...\x1b[0m'
+  );
+
+
+  this.ws?.send(JSON.stringify({
           host: config.host,
           port: config.port,
           username: config.username,
@@ -1725,17 +1736,12 @@ ${info.password}
     this.heartbeatInterval = setInterval(sendPing, 30000);
   }
 
-  private getTerminalSize(): { cols: number; rows: number } {
+  private getTerminalSize(): { cols:number; rows:number } {
 
-  const isMobile = window.innerWidth <= 768;
-
-  return {
-
-    cols: isMobile ? 45 : this.terminal.cols,
-
-    rows: isMobile ? 24 : this.terminal.rows,
-
-  };
+ return {
+   cols:this.terminal.cols,
+   rows:this.terminal.rows
+ };
 
 }
 

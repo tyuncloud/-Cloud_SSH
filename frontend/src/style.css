@@ -2970,3 +2970,53 @@ textarea.tyun-input:focus {
     background:#ffedd5;
 
 }
+
+/* ==========================
+   CloudSSH Mobile 优化
+   不影响 PC
+========================== */
+
+@media (max-width:768px){
+
+
+/* Terminal 主区域手机改上下布局 */
+
+#terminal-section .flex-1{
+    flex-direction: column;
+}
+
+
+
+/* 左侧 Connection */
+
+#server-sidebar{
+
+    width:100% !important;
+
+    max-height:420px;
+
+    overflow-y:auto;
+
+}
+
+
+
+/* Terminal区域 */
+
+#terminal-section{
+
+    overflow:hidden;
+
+}
+
+
+/* 快捷按钮 */
+
+#server-sidebar button{
+
+    width:100%;
+
+}
+
+
+}

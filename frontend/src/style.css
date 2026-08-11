@@ -3107,3 +3107,332 @@ textarea.tyun-input:focus {
 }
 
 
+/* ===================================
+   CloudSSH Homepage V2 Final Design
+   =================================== */
+
+
+/* 首页整体 */
+
+.cloudssh-home{
+
+    min-height:100vh;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:90px;
+
+    padding:50px;
+
+}
+
+
+/* 左侧品牌区域 */
+
+.cloudssh-brand{
+
+    width:560px;
+
+    padding:45px;
+
+    border-radius:30px;
+
+    background:
+    rgba(255,255,255,.55);
+
+    backdrop-filter:blur(20px);
+
+    box-shadow:
+    0 25px 60px rgba(0,0,0,.08);
+
+}
+
+
+
+/* Logo */
+
+.cloudssh-brand h1{
+
+
+    font-size:46px;
+
+    font-weight:900;
+
+    margin-bottom:20px;
+
+}
+
+
+/* 唐云颜色 */
+
+.brand-orange{
+
+    color:#ff7a00;
+
+}
+
+
+
+/* 主标题 */
+
+.cloudssh-brand h2{
+
+
+    font-size:30px;
+
+    font-weight:800;
+
+    color:#111827;
+
+}
+
+
+
+/* 描述 */
+
+.cloudssh-description{
+
+
+    font-size:16px;
+
+    color:#64748b;
+
+    line-height:1.8;
+
+}
+
+
+/* Terminal展示 */
+
+.cloudssh-terminal-preview{
+
+
+    margin-top:30px;
+
+    border-radius:20px;
+
+    overflow:hidden;
+
+
+    background:#0f172a;
+
+
+    box-shadow:
+
+    0 25px 50px rgba(0,0,0,.18);
+
+}
+
+
+
+/* Terminal顶部 */
+
+.terminal-header{
+
+
+    height:42px;
+
+    background:#111827;
+
+    color:#ff7a00;
+
+    display:flex;
+
+    align-items:center;
+
+    padding-left:20px;
+
+}
+
+
+/* Terminal内容 */
+
+.terminal-body{
+
+
+    color:#e5e7eb;
+
+    padding:25px;
+
+}
+
+
+
+/* 节点状态 */
+
+.cloudssh-status-panel{
+
+
+    margin-top:25px;
+
+    display:flex;
+
+    justify-content:center;
+
+}
+
+
+/* 状态卡 */
+
+.cloudssh-status-panel div{
+
+
+    background:white;
+
+    padding:15px 25px;
+
+    border-radius:20px;
+
+    box-shadow:
+
+    0 10px 30px rgba(0,0,0,.08);
+
+
+}
+
+
+
+/* 绿色节点 */
+
+.cloudssh-status-panel span:first-child{
+
+
+    font-size:22px;
+
+
+}
+
+
+
+/* 右侧卡片 */
+
+
+.cloudssh-card{
+
+
+    width:430px !important;
+
+
+    border-radius:25px;
+
+
+    padding:32px !important;
+
+
+    background:white;
+
+
+    box-shadow:
+
+
+    0 30px 70px rgba(255,122,0,.15);
+
+
+}
+
+
+
+/* 卡片标题 */
+
+
+.cloudssh-card-header h3{
+
+
+    font-size:22px !important;
+
+
+    font-weight:800;
+
+
+}
+
+
+
+
+/* 输入框 */
+
+
+.cloudssh-input-box{
+
+
+    height:48px !important;
+
+
+    border-radius:12px !important;
+
+
+}
+
+
+
+/* 连接按钮 */
+
+
+#connect-btn{
+
+
+    height:52px !important;
+
+
+    border-radius:14px !important;
+
+
+    font-size:16px !important;
+
+
+    background:
+
+    linear-gradient(
+        135deg,
+        #ff7a00,
+        #ff9d2e
+    ) !important;
+
+
+}
+
+
+
+/* 手机保护 */
+
+@media(max-width:900px){
+
+
+.cloudssh-home{
+
+
+    flex-direction:column;
+
+
+    padding:30px 15px;
+
+
+}
+
+
+
+.cloudssh-brand{
+
+
+    width:100%;
+
+
+}
+
+
+
+.cloudssh-card{
+
+
+    width:100% !important;
+
+
+}
+
+
+
+}

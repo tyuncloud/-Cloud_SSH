@@ -3523,3 +3523,58 @@ textarea.tyun-input:focus {
 
 
 }
+
+/* Terminal Window Dots */
+
+
+.terminal-dots{
+
+    display:flex;
+
+    gap:7px;
+
+    margin-right:10px;
+
+}
+
+
+.terminal-dots span{
+
+    width:10px;
+
+    height:10px;
+
+    border-radius:50%;
+
+}
+
+
+.terminal-dots span:nth-child(1){
+
+    background:#ef4444;
+
+}
+
+
+.terminal-dots span:nth-child(2){
+
+    background:#facc15;
+
+}
+
+
+.terminal-dots span:nth-child(3){
+
+    background:#22c55e;
+
+}
+
+
+
+.terminal-header{
+
+    display:flex;
+
+    align-items:center;
+
+}

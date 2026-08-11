@@ -316,6 +316,8 @@ document.getElementById('connection-port');
 
     scrollback: 10000,
 
+    convertEol: true,
+
   });
 
 
@@ -1606,8 +1608,22 @@ ${info.password}
 
 }
               if (msg.event === 'shell_ready' || msg.message === 'Shell 已就绪') {
-                this.onSessionReady?.();
-              }
+
+
+    this.onSessionReady?.();
+
+
+    setTimeout(()=>{
+
+        this.fit();
+
+        this.terminal.focus();
+
+
+    },200);
+
+
+}
               break;
             case 'error':
               this.terminal.writeln(`\x1b[31m[!] ${msg.message}\x1b[0m`);
@@ -1638,10 +1654,16 @@ ${info.password}
         catch {
 
 
-           this.trzszFilter!.processServerOutput(event.data);
+   console.log("SSH RAW:", JSON.stringify(event.data));
 
 
-        }
+   this.trzszFilter!.processServerOutput(event.data);
+
+
+}
+
+
+}
       } else {
         this.trzszFilter!.processServerOutput(event.data);
       }

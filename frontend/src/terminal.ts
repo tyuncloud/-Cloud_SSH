@@ -1570,8 +1570,7 @@ ${info.password}
     });
 
     this.ws.onmessage = (event) => {
-      if (typeof event.data === 'string') {
-            this.terminalOutputBuffer += event.data;
+      if (typeof event.data === 'string') {       
         try {
           const msg = JSON.parse(event.data);
           if (msg.type === 'sftp_attach') {
@@ -1609,7 +1608,6 @@ ${info.password}
 }
               if (msg.event === 'shell_ready' || msg.message === 'Shell 已就绪') {
 
-
     this.onSessionReady?.();
 
 
@@ -1617,11 +1615,14 @@ ${info.password}
 
         this.fit();
 
+        this.terminal.refresh(
+            0,
+            this.terminal.rows
+        );
+
         this.terminal.focus();
 
-
     },200);
-
 
 }
               break;

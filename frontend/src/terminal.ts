@@ -306,7 +306,7 @@ document.getElementById('connection-port');
 
     cursorStyle: 'block',
 
-    fontSize: window.innerWidth <= 768 ? 11 : 13,
+    fontSize: 13,
 
     fontFamily: '"JetBrains Mono", "Fira Code", "Cascadia Code", monospace',
 
@@ -1726,11 +1726,18 @@ ${info.password}
   }
 
   private getTerminalSize(): { cols: number; rows: number } {
-    return {
-      cols: this.terminal.cols,
-      rows: this.terminal.rows,
-    };
-  }
+
+  const isMobile = window.innerWidth <= 768;
+
+  return {
+
+    cols: isMobile ? 45 : this.terminal.cols,
+
+    rows: isMobile ? 24 : this.terminal.rows,
+
+  };
+
+}
 
   private sendResize(size = this.getTerminalSize()): void {
     if (this.ws?.readyState === WebSocket.OPEN) {

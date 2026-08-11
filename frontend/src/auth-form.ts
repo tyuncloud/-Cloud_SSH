@@ -56,11 +56,14 @@ export class ConnectionForm {
   private turnstileSitekey = '';
 
   constructor(options: ConnectionFormOptions) {
+
     this.options = options;
+
     this.render();
-    this.loadSavedCredentials();
+
     this.checkTurnstileConfig();
-  }
+
+}
 
   private async checkTurnstileConfig(): Promise<void> {
     try {
@@ -633,9 +636,9 @@ export class ConnectionForm {
 
           <label for="remember-me">
 
-            保存连接信息
+    记住服务器地址
 
-          </label>
+</label>
 
 
         </div>
@@ -1077,48 +1080,28 @@ if (this.authMode === 'key' && !privateKey) {
   return;
 
 }
-    // 保存连接历史与凭据
-    let encryptedCred: string | undefined = undefined;
-    if (remember) {
-      encryptedCred = await encryptCredentials({
-        host,
-        port: port.toString(),
-        username,
-        password,
-        privateKey: this.authMode === 'key' ? privateKey : undefined,
-        authMethod: this.authMode === 'key' ? 'publickey' : 'password',
-      });
-    }
+   // 保存服务器信息，不保存密码
 
-    // 更新最近连接列表
-    const recentRaw = localStorage.getItem('cloudssh_recent_connections');
-    let recent: any[] = [];
-    try {
-      recent = recentRaw ? JSON.parse(recentRaw) : [];
-      if (!Array.isArray(recent)) recent = [];
-    } catch {}
+let encryptedCred: string | undefined = undefined;
 
-    const id = `${username}@${host}:${port}`;
-    const newRecord = {
-      id,
-      host,
-      port,
-      username,
-      authMethod: this.authMode === 'key' ? 'publickey' : 'password',
-      timestamp: Date.now(),
-      ...(regionValue ? { region: regionValue } : {}),   // 区域偏好持久化到 recent
-      ...(encryptedCred ? { encryptedCred } : {}),
-    };
+if (remember) {
 
-    // 去重：如果已有相同 id 记录，先删除
-    recent = recent.filter(r => r.id !== id);
-    // 插入头部
-    recent.unshift(newRecord);
-    // 限制最近 5 条
-    if (recent.length > 5) {
-      recent = recent.slice(0, 5);
-    }
-    localStorage.setItem('cloudssh_recent_connections', JSON.stringify(recent));
+    localStorage.setItem(
+        'cloudssh_server',
+        JSON.stringify({
+
+            host,
+
+            port,
+
+            username
+
+        })
+    );
+
+}
+
+  
 
     // 重新渲染历史列表
     this.renderRecentConnections();

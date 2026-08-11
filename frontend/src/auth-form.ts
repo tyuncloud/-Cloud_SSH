@@ -277,6 +277,10 @@ export class ConnectionForm {
                 ONLINE
             </strong>
 
+            <small>
+      连接正常，服务可用
+       </small>
+
 
         </div>
 

@@ -3578,3 +3578,262 @@ textarea.tyun-input:focus {
     align-items:center;
 
 }
+
+/* ===================================
+ CloudSSH Homepage V2.0 Polish
+=================================== */
+
+
+/* 首页整体 */
+
+.cloudssh-home{
+
+    gap:100px !important;
+
+}
+
+
+/* 左侧 */
+
+.cloudssh-brand{
+
+    width:620px !important;
+
+    padding:45px !important;
+
+}
+
+
+/* Logo */
+
+.cloudssh-brand h1{
+
+    font-size:52px !important;
+
+    letter-spacing:-2px;
+
+}
+
+
+/* 主标题 */
+
+.cloudssh-brand h2{
+
+    font-size:32px !important;
+
+    line-height:1.35;
+
+    margin-top:15px;
+
+}
+
+
+/* 描述 */
+
+.cloudssh-description{
+
+    font-size:18px !important;
+
+    line-height:1.8;
+
+    margin-top:25px;
+
+}
+
+
+/* 功能标签 */
+
+.cloudssh-features span{
+
+
+    padding:12px 20px !important;
+
+    border-radius:14px !important;
+
+
+    background:
+
+    rgba(255,255,255,.8);
+
+
+    box-shadow:
+
+    0 10px 30px rgba(0,0,0,.06);
+
+
+}
+
+
+
+/* Terminal窗口 */
+
+.cloudssh-terminal-preview{
+
+
+    margin-top:45px !important;
+
+
+    border-radius:22px !important;
+
+
+    overflow:hidden;
+
+
+    box-shadow:
+
+    0 30px 80px rgba(0,0,0,.22);
+
+
+}
+
+
+/* Terminal顶部 */
+
+.terminal-header{
+
+
+    height:48px !important;
+
+    font-size:14px;
+
+
+}
+
+
+
+/* Terminal字体 */
+
+.terminal-command{
+
+
+    color:#86efac !important;
+
+    font-weight:600;
+
+
+}
+
+
+.terminal-success{
+
+    color:#22c55e !important;
+
+}
+
+
+
+/* 节点卡 */
+
+
+.node-status-card{
+
+
+    width:100%;
+
+
+    justify-content:flex-start !important;
+
+
+    gap:35px !important;
+
+
+}
+
+
+
+/* 绿色节点 */
+
+.node-light{
+
+
+    width:18px !important;
+
+    height:18px !important;
+
+
+    background:#22c55e !important;
+
+
+}
+
+
+
+/* 右侧 */
+
+
+.cloudssh-card{
+
+
+    width:500px !important;
+
+
+    padding:40px !important;
+
+
+}
+
+
+/* 标题 */
+
+.cloudssh-card-header h3{
+
+
+    font-size:28px !important;
+
+
+}
+
+
+/* 输入框 */
+
+.cloudssh-input-box{
+
+
+    height:56px !important;
+
+
+    border-radius:16px !important;
+
+
+}
+
+
+/* 输入文字 */
+
+.terminal-input{
+
+
+    font-size:16px !important;
+
+}
+
+
+
+/* 连接按钮 */
+
+#connect-btn{
+
+
+    height:58px !important;
+
+
+    border-radius:18px !important;
+
+
+    font-size:18px !important;
+
+
+}
+
+
+/* 状态 */
+
+
+.cloudssh-status{
+
+
+    margin-top:20px;
+
+    font-size:15px;
+
+}

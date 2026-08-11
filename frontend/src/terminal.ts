@@ -198,6 +198,45 @@ export class SSHTerminal {
   private maxReconnectAttempts: number = 5;
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
   private lastConfig: SSHConnectionConfig | null = null;
+  private updateConnectionInfo(): void {
+
+    if (!this.lastConfig) return;
+
+
+    const host =
+    document.getElementById('server-host');
+
+    const user =
+    document.getElementById('server-user');
+
+    const port =
+    document.getElementById('server-port');
+
+    const auth =
+    document.getElementById('server-auth');
+
+
+    if(host)
+        host.innerText=this.lastConfig.host;
+
+
+    if(user)
+        user.innerText=this.lastConfig.username;
+
+
+    if(port)
+        port.innerText=String(this.lastConfig.port);
+
+
+    if(auth)
+        auth.innerText=
+        this.lastConfig.authMethod === 'publickey'
+        ?
+        'SSH Key'
+        :
+        'Password';
+
+}
   private canReconnect: boolean = true;
   private manualDisconnect: boolean = false;
   private intentionalClose: boolean = false;
@@ -322,6 +361,25 @@ export class SSHTerminal {
     }
   }
 
+  private updateLatency(latency:number|null){
+
+const el=document.getElementById(
+'server-latency'
+);
+
+
+if(el){
+
+el.innerText =
+latency !== null
+?
+latency+' ms'
+:
+'--';
+
+}
+
+}
   getSFTPWebSocketUrl(): string | null {
     return this.sftpAttachUrl;
   }
@@ -1211,6 +1269,7 @@ ${info.password}
     this.terminalOutputBuffer = '';
 
     this.lastConfig = config;
+    this.updateConnectionInfo();
     this.canReconnect = true;
     if (options.resetDisplay !== false) {
       this.showConnectingBanner();
@@ -1349,6 +1408,7 @@ ${info.password}
             case 'pong':
               if (this.lastPingTime !== null) {
                 this.wsLatency = Math.round(performance.now() - this.lastPingTime);
+                this.updateLatency(this.wsLatency);
                 this.lastPingTime = null;
                 this.onLatencyUpdated?.(this.cfLatency, this.cfColo, this.wsLatency);
               }

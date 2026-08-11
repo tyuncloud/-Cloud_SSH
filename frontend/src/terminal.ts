@@ -205,6 +205,15 @@ export class SSHTerminal {
 
     const host =
         document.getElementById('server-host');
+    console.log(
+"host元素:",
+host
+);
+
+console.log(
+"当前配置:",
+this.lastConfig
+);
 
     const user =
         document.getElementById('server-user');

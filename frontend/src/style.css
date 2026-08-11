@@ -3863,3 +3863,11 @@ textarea.tyun-input:focus {
     font-size:17px !important;
 
 }
+
+.node-info small{
+
+    color:#64748b;
+
+    font-size:12px;
+
+}

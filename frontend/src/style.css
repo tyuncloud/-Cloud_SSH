@@ -4402,15 +4402,14 @@ textarea.tyun-input:focus {
 
 .cloudssh-description{
 
+    margin-bottom:10px !important;
 
-    font-size:15px !important;
-
-
-    line-height:1.6 !important;
+}
 
 
-    margin-bottom:20px !important;
+.cloudssh-terminal-preview{
 
+    margin-top:20px !important;
 
 }
 
@@ -5143,5 +5142,15 @@ textarea.tyun-input:focus {
 
 
     font-size:15px !important;
+
+}
+
+.cloudssh-home{
+
+    max-width:1200px !important;
+
+    margin:0 auto;
+
+    gap:80px !important;
 
 }

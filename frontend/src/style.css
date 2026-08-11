@@ -4188,3 +4188,113 @@ textarea.tyun-input:focus {
 
 
 }
+/* ===========================
+   Node Status Final Style
+=========================== */
+
+
+.cloudssh-status-panel{
+
+    margin-top:20px !important;
+
+}
+
+
+
+.node-status-card{
+
+
+    height:100px !important;
+
+    width:100%;
+
+
+    padding:18px 28px !important;
+
+
+    border-radius:22px !important;
+
+
+    display:flex;
+
+
+    align-items:center;
+
+
+    justify-content:space-between;
+
+
+}
+
+
+
+
+
+.node-health{
+
+
+    display:flex;
+
+    align-items:center;
+
+    gap:15px;
+
+
+}
+
+
+
+.node-light{
+
+
+    width:14px !important;
+
+    height:14px !important;
+
+
+}
+
+
+
+.node-info strong{
+
+
+    font-size:18px !important;
+
+
+}
+
+
+.node-info small{
+
+
+    display:block;
+
+    margin-top:3px;
+
+
+}
+
+
+
+
+.node-item{
+
+
+    border-left:none !important;
+
+
+    padding-left:15px !important;
+
+
+}
+
+
+
+.node-item b{
+
+
+    font-size:16px !important;
+
+
+}

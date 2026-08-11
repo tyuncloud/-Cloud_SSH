@@ -242,20 +242,42 @@ export class ConnectionForm {
 
 <div class="cloudssh-status-panel">
 
-    <div>
-        <span>🟢</span>
-        Service Online
+
+    <div class="node-status-card">
+
+
+        <div class="node-light"></div>
+
+
+        <div class="node-info">
+
+            <span>
+                节点状态
+            </span>
+
+
+            <strong>
+                ONLINE
+            </strong>
+
+
+        </div>
+
+
+
+        <div class="node-delay">
+
+            延迟
+
+            <b>
+                28ms
+            </b>
+
+        </div>
+
+
     </div>
 
-    <div>
-        <span>🔒</span>
-        Secure Channel
-    </div>
-
-    <div>
-        <span>⚡</span>
-        Low Latency
-    </div>
 
 </div>
 

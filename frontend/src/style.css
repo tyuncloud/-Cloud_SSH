@@ -3871,3 +3871,170 @@ textarea.tyun-input:focus {
     font-size:12px;
 
 }
+/* =================================
+ CloudSSH Homepage Compact V2.1
+================================= */
+
+
+/* 整体 */
+
+.cloudssh-home{
+
+    gap:70px !important;
+
+    padding:30px !important;
+
+    align-items:center !important;
+
+}
+
+
+
+/* 左侧 */
+
+.cloudssh-brand{
+
+    width:540px !important;
+
+    padding:35px !important;
+
+}
+
+
+
+/* 标题 */
+
+.cloudssh-brand h1{
+
+    font-size:44px !important;
+
+}
+
+
+
+/* 副标题 */
+
+.cloudssh-brand h2{
+
+    font-size:28px !important;
+
+    margin-top:10px !important;
+
+}
+
+
+
+/* 描述 */
+
+.cloudssh-description{
+
+    margin-top:20px !important;
+
+    font-size:15px !important;
+
+}
+
+
+
+
+/* Terminal */
+
+.cloudssh-terminal-preview{
+
+    margin-top:30px !important;
+
+}
+
+
+.terminal-body{
+
+    padding:22px !important;
+
+}
+
+
+.cloudssh-terminal-preview{
+
+    height:auto !important;
+
+}
+
+
+
+
+
+/* 节点 */
+
+.node-status-card{
+
+
+    padding:14px 20px !important;
+
+
+}
+
+
+
+/* 右侧卡片 */
+
+
+.cloudssh-card{
+
+
+    width:430px !important;
+
+
+    padding:30px !important;
+
+
+}
+
+
+
+
+/* 卡片标题 */
+
+.cloudssh-card-header h3{
+
+
+    font-size:24px !important;
+
+
+}
+
+
+
+/* 输入框 */
+
+.cloudssh-input-box{
+
+
+    height:46px !important;
+
+
+}
+
+
+
+/* 字段间距 */
+
+.cloudssh-field{
+
+
+    margin-bottom:14px !important;
+
+
+}
+
+
+
+/* 按钮 */
+
+
+#connect-btn{
+
+
+    height:52px !important;
+
+
+}

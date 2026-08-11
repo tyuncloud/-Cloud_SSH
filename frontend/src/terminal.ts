@@ -1306,6 +1306,12 @@ ${info.password}
     this.terminalOutputBuffer = '';
 
     this.lastConfig = config;
+
+     console.log(
+    "CloudSSH Config:",
+    config
+   );
+
     this.updateConnectionInfo();
     this.canReconnect = true;
     if (options.resetDisplay !== false) {

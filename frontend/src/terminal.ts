@@ -345,7 +345,10 @@ document.getElementById('connection-port');
       return true;
     });
 
-    window.addEventListener('resize', this.resizeListener);
+    window.addEventListener(
+    'resize',
+    this.resizeListener
+);
 
     
   
@@ -1609,6 +1612,13 @@ ${info.password}
               if (msg.event === 'shell_ready' || msg.message === 'Shell 已就绪') {
 
     this.onSessionReady?.();
+
+
+setTimeout(()=>{
+
+    this.fit();
+
+},300);
 
 
     setTimeout(()=>{

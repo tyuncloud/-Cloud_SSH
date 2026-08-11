@@ -3837,3 +3837,29 @@ textarea.tyun-input:focus {
     font-size:15px;
 
 }
+
+/* ============================
+   Hero Typography V2
+============================ */
+
+
+.cloudssh-brand h2{
+
+    max-width:420px;
+
+    font-size:34px !important;
+
+    line-height:1.45;
+
+}
+
+
+.cloudssh-description{
+
+    margin-top:35px !important;
+
+    max-width:420px;
+
+    font-size:17px !important;
+
+}

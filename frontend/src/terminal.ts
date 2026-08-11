@@ -321,7 +321,7 @@ document.getElementById('connection-port');
 
   this.initQuickActionButtons();
 
-}
+
     this.fitAddon = new FitAddon();
     this.terminal.loadAddon(this.fitAddon);
     this.terminal.loadAddon(new WebLinksAddon());

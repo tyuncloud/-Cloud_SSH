@@ -57,11 +57,13 @@ export class ConnectionForm {
 
   constructor(options: ConnectionFormOptions) {
 
-    this.options = options;
+  this.options = options;
 
-    this.render();
+  this.render();
 
-    this.checkTurnstileConfig();
+  this.loadRememberedServer();
+
+  this.checkTurnstileConfig();
 
 }
 
@@ -952,6 +954,84 @@ fileInput?.addEventListener(
 // render结束
 }
 
+
+private loadRememberedServer(): void {
+
+  const saved =
+    localStorage.getItem('cloudssh_server');
+
+  if (!saved) {
+    return;
+  }
+
+  try {
+
+    const data = JSON.parse(saved);
+
+    const hostInput =
+      document.getElementById('host') as HTMLInputElement | null;
+
+    const portInput =
+      document.getElementById('port') as HTMLInputElement | null;
+
+    const usernameInput =
+      document.getElementById('username') as HTMLInputElement | null;
+
+    const rememberInput =
+      document.getElementById('remember-me') as HTMLInputElement | null;
+
+
+    if (hostInput) {
+
+      hostInput.value =
+        data.host || '';
+
+    }
+
+
+    if (portInput) {
+
+      portInput.value =
+        String(data.port || 22);
+
+    }
+
+
+    if (usernameInput) {
+
+      usernameInput.value =
+        data.username || 'root';
+
+    }
+
+
+    if (rememberInput) {
+
+      rememberInput.checked = true;
+
+    }
+
+
+    // 安全要求：
+    // 永远不恢复密码
+    const passwordInput =
+      document.getElementById('password') as HTMLInputElement | null;
+
+    if (passwordInput) {
+
+      passwordInput.value = '';
+
+    }
+
+  } catch {
+
+    localStorage.removeItem('cloudssh_server');
+
+  }
+
+}
+
+  
 private authMode: 'password' | 'key' = 'password';
 
   private setAuthMode(mode: 'password' | 'key'): void {
@@ -1187,18 +1267,20 @@ let encryptedCred: string | undefined = undefined;
 
 if (remember) {
 
-    localStorage.setItem(
-        'cloudssh_server',
-        JSON.stringify({
+  localStorage.setItem(
+    'cloudssh_server',
+    JSON.stringify({
+      host,
+      port,
+      username
+    })
+  );
 
-            host,
+} else {
 
-            port,
-
-            username
-
-        })
-    );
+  localStorage.removeItem(
+    'cloudssh_server'
+  );
 
 }
 

@@ -747,25 +747,29 @@ export class ConnectionForm {
         <!-- 状态 -->
 
 
-        <div class="cloudssh-status">
+       <div class="cloudssh-status">
 
+  <span id="status-text">
 
-          <span id="status-text">
+    <span class="status-dot"></span>
 
-            <span class="status-dot"></span>
+    READY
 
-            STATUS: OFFLINE
+    <span class="status-separator">
+      ·
+    </span>
 
-          </span>
+    <span class="status-latency">
+      节点延迟 28ms
+    </span>
 
+  </span>
 
+  <span
+    id="github-login-placeholder"
+  ></span>
 
-          <span
-            id="github-login-placeholder"
-          ></span>
-
-
-        </div>
+</div>
 
 
 
@@ -1234,7 +1238,10 @@ if (remember) {
     } catch (error) {
       // 连接失败时关闭该标签
       tm.closeTab(tab.id);
-      document.getElementById('status-text')!.innerHTML = '<span class="w-2 h-2 bg-surface-dot inline-block"></span> STATUS: OFFLINE';
+      document.getElementById('status-text')!.innerHTML = `
+  <span class="status-dot"></span>
+  CONNECTION FAILED
+`;
     }
   }
 }

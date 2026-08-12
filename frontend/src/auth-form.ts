@@ -548,28 +548,31 @@ export class ConnectionForm {
 
           <div id="auth-password-section">
 
+  <div class="cloudssh-input-box">
 
-            <div class="cloudssh-input-box">
+    <span>
+      🔑
+    </span>
 
+    <input
+      id="password"
+      class="terminal-input"
+      type="password"
+      placeholder="请输入服务器密码"
+    >
 
-              <span>
-                🔑
-              </span>
+    <button
+      type="button"
+      id="password-toggle"
+      class="password-toggle"
+      title="显示密码"
+    >
+      👁
+    </button>
 
+  </div>
 
-
-              <input
-                id="password"
-                class="terminal-input"
-                type="password"
-                placeholder="请输入服务器密码"
-              >
-
-
-            </div>
-
-
-          </div>
+</div>
 
 
 
@@ -831,6 +834,29 @@ if (regionSelect) {
 
 
 
+// ==========================
+// 密码显示 / 隐藏
+// ==========================
+
+const passwordInput =
+  document.getElementById('password') as HTMLInputElement | null;
+
+const passwordToggle =
+  document.getElementById('password-toggle') as HTMLButtonElement | null;
+
+passwordToggle?.addEventListener('click', () => {
+
+  if (!passwordInput) return;
+
+  const isHidden = passwordInput.type === 'password';
+
+  passwordInput.type = isHidden ? 'text' : 'password';
+
+  passwordToggle.textContent = isHidden ? '🙈' : '👁';
+
+  passwordToggle.title = isHidden ? '隐藏密码' : '显示密码';
+
+});
 
 
 

@@ -6031,15 +6031,23 @@ textarea.tyun-input:focus {
 }
 
 
+
+
 /* =========================
-   节点区域
+   节点区域选择框
    ========================= */
 
-#anon-region {
+.region-select-box {
     width: 100% !important;
     height: 44px !important;
 
     padding: 0 12px !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+
+    gap: 10px !important;
 
     background: #ffffff !important;
 
@@ -6047,24 +6055,80 @@ textarea.tyun-input:focus {
 
     border-radius: 10px !important;
 
+    box-sizing: border-box !important;
+
+    transition:
+        border-color .18s ease,
+        box-shadow .18s ease,
+        background .18s ease !important;
+}
+
+
+/* 鼠标经过 */
+
+.region-select-box:hover {
+    border-color: #fdba74 !important;
+
+    background: #fffdfa !important;
+}
+
+
+/* 下拉框聚焦 */
+
+.region-select-box:focus-within {
+    border-color: #ff7600 !important;
+
+    background: #ffffff !important;
+
+    box-shadow:
+        0 0 0 3px rgba(255,118,0,.08) !important;
+}
+
+
+/* 绿色节点圆点 */
+
+.region-status-dot {
+    width: 10px !important;
+    height: 10px !important;
+
+    min-width: 10px !important;
+
+    display: inline-block !important;
+
+    flex: 0 0 10px !important;
+
+    background: #22c55e !important;
+
+    border-radius: 50% !important;
+
+    box-shadow:
+        0 0 0 4px rgba(34,197,94,.10),
+        0 0 10px rgba(34,197,94,.28) !important;
+}
+
+
+/* 真正的 select */
+
+#region-select-box,
+#anon-region {
+    flex: 1 !important;
+
+    width: 100% !important;
+    height: 100% !important;
+
+    padding: 0 !important;
+
+    background: transparent !important;
+
+    border: none !important;
+
+    outline: none !important;
+
     color: #111827 !important;
 
     font-size: 13px !important;
 
-    outline: none !important;
-}
-
-
-#anon-region:hover {
-    border-color: #fdba74 !important;
-}
-
-
-#anon-region:focus {
-    border-color: #ff7600 !important;
-
-    box-shadow:
-        0 0 0 3px rgba(255,118,0,.08) !important;
+    cursor: pointer !important;
 }
 
 

@@ -198,6 +198,7 @@ export class SSHTerminal {
   private maxReconnectAttempts: number = 5;
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
   private lastConfig: SSHConnectionConfig | null = null;
+  private hasConnectedSuccessfully: boolean = false;
   private updateConnectionInfo(): void {
 
     if (!this.lastConfig) return;
@@ -274,7 +275,7 @@ document.getElementById('connection-port');
     }
 
 }
-  private canReconnect: boolean = true;
+  private canReconnect: boolean = false;
   private manualDisconnect: boolean = false;
   private intentionalClose: boolean = false;
   private restoreCursorBlinkAfterReturnPrompt: boolean = false;
@@ -1463,10 +1464,22 @@ ${info.password}
    );
 
     this.updateConnectionInfo();
-    this.canReconnect = true;
-    if (options.resetDisplay !== false) {
-      this.showConnectingBanner();
-    }
+
+/*
+ * 首次连接禁止自动重连。
+ * 只有之前已经成功认证过的会话，
+ * 因网络波动进入重连时才保留重连资格。
+ */
+if (options.resetDisplay !== false) {
+
+    this.hasConnectedSuccessfully = false;
+    this.canReconnect = false;
+
+}
+
+if (options.resetDisplay !== false) {
+    this.showConnectingBanner();
+}
 
     const termStatus = document.getElementById('term-status');
     if (termStatus) termStatus.innerHTML = '<div class="w-2 h-2 bg-primary-container animate-pulse"></div> Connected';
@@ -1590,6 +1603,9 @@ ${info.password}
             case 'status':
               this.terminal.writeln(`\x1b[32m[*] ${msg.message}\x1b[0m`);
               if (msg.event === 'auth_success' || msg.message === '认证成功') {
+                
+    this.hasConnectedSuccessfully = true;
+    this.canReconnect = true;            
 
     this.reconnectAttempts = 0;
 
@@ -1637,8 +1653,30 @@ setTimeout(()=>{
 }
               break;
             case 'error':
-              this.terminal.writeln(`\x1b[31m[!] ${msg.message}\x1b[0m`);
-              break;
+
+    this.terminal.writeln(
+        `\x1b[31m[!] ${msg.message}\x1b[0m`
+    );
+
+    /*
+     * 如果 SSH 从来没有认证成功，
+     * 说明这是首次连接失败：
+     *
+     * - 密码错误
+     * - 用户名错误
+     * - 端口错误
+     * - 主机不可达
+     * - SSH 握手失败
+     *
+     * 这些情况禁止自动重连。
+     */
+    if (!this.hasConnectedSuccessfully) {
+
+        this.canReconnect = false;
+
+    }
+
+    break;
             case 'debug':
               this.terminal.writeln(`\x1b[90m[DEBUG] ${msg.message}\x1b[0m`);
               break;
@@ -1713,15 +1751,16 @@ setTimeout(()=>{
       }
 
       if (
-       !this.manualDisconnect &&
-       this.canReconnect &&
-       this.lastConfig &&
-       this.reconnectAttempts < this.maxReconnectAttempts
-   ) {
+    !this.manualDisconnect &&
+    this.hasConnectedSuccessfully &&
+    this.canReconnect &&
+    this.lastConfig &&
+    this.reconnectAttempts < this.maxReconnectAttempts
+) {
 
-       this.scheduleReconnect();
+    this.scheduleReconnect();
 
-      }
+}
     };
 
     this.ws.onerror = () => {
@@ -1885,6 +1924,8 @@ setTimeout(()=>{
   disconnect(): void {
 
   this.manualDisconnect = true;
+ this.hasConnectedSuccessfully = false;
+  this.canReconnect = false;
 
   this.reconnectAttempts = this.maxReconnectAttempts;
 

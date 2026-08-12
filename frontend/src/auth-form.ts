@@ -1216,7 +1216,14 @@ private authMode: 'password' | 'key' = 'password';
       (document.getElementById('port') as HTMLInputElement).value || '22'
     );
     const username = (document.getElementById('username') as HTMLInputElement).value;
-    const password = (document.getElementById('password') as HTMLInputElement).value;
+    const passwordInput =
+  document.getElementById('password') as HTMLInputElement;
+
+const password =
+  passwordInput.value.trim();
+
+/* 自动同步删除输入框前后误复制的空格 */
+passwordInput.value = password;
     const privateKey = (document.getElementById('private-key') as HTMLTextAreaElement).value;
     const remember = (document.getElementById('remember-me') as HTMLInputElement).checked;
     // 匿名路径区域选择（仅作为 manual override；系统不会对此路径自动推断）

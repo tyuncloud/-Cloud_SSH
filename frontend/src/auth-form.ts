@@ -667,29 +667,33 @@ export class ConnectionForm {
         <div class="cloudssh-field">
 
 
-          <label>
-            节点区域
-            <span class="cloudssh-tip">
-              (可选)
-            </span>
-          </label>
+  <label>
+    节点区域
+    <span class="cloudssh-tip">
+      (可选)
+    </span>
+  </label>
 
 
+  <div class="region-select-box">
 
-          <select
-            id="anon-region"
-            class="terminal-input"
-          >
+    <span class="region-status-dot"></span>
 
-            <option value="">
-              自动选择
-            </option>
+    <select
+      id="anon-region"
+      class="terminal-input"
+    >
+
+      <option value="">
+        自动选择
+      </option>
+
+    </select>
+
+  </div>
 
 
-          </select>
-
-
-        </div>
+</div>
 
 
 

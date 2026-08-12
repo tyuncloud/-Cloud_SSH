@@ -5691,12 +5691,13 @@ textarea.tyun-input:focus {
 
 
 /* =========================================================
-   6. 右侧 SSH 卡片
+   6. 右侧 SSH 卡片 - 最终优化版
    ========================================================= */
 
-/* =========================================================
-   6. 右侧 SSH 卡片 - FINAL POLISH
-   ========================================================= */
+
+/* =========================
+   右侧整体卡片
+   ========================= */
 
 .cloudssh-card {
     width: 430px !important;
@@ -5704,9 +5705,9 @@ textarea.tyun-input:focus {
     min-height: 0 !important;
     height: auto !important;
 
-    padding: 26px 28px 24px !important;
+    padding: 28px !important;
 
-    background: rgba(255,255,255,.94) !important;
+    background: rgba(255,255,255,.96) !important;
 
     border: 1px solid #e7ebf1 !important;
     border-radius: 24px !important;
@@ -5719,18 +5720,26 @@ textarea.tyun-input:focus {
 }
 
 
-/* 顶部标题区 */
+/* =========================
+   顶部标题
+   ========================= */
 
 .cloudssh-card-header {
     margin: 0 0 16px 0 !important;
 
-    padding: 0 0 13px 0 !important;
+    padding: 0 0 14px 0 !important;
 
     border-bottom: 1px solid #eef2f7 !important;
 }
 
+
 .cloudssh-card-header h3 {
     margin: 0 0 4px 0 !important;
+
+    display: flex !important;
+    align-items: center !important;
+
+    gap: 8px !important;
 
     font-size: 22px !important;
     line-height: 1.2 !important;
@@ -5738,25 +5747,38 @@ textarea.tyun-input:focus {
     font-weight: 800 !important;
 
     color: #111827 !important;
-
-    letter-spacing: -.3px !important;
 }
+
+
+/* 标题右侧小盾牌 */
+
+.cloudssh-card-header h3::after {
+    content: "🛡️";
+
+    font-size: 16px;
+
+    display: inline-block;
+}
+
 
 .cloudssh-card-header p {
     margin: 0 !important;
 
+    color: #94a3b8 !important;
+
     font-size: 11px !important;
     line-height: 1.4 !important;
-
-    color: #94a3b8 !important;
 }
 
 
-/* 表单字段 */
+/* =========================
+   表单字段
+   ========================= */
 
 .cloudssh-field {
-    margin-bottom: 11px !important;
+    margin-bottom: 12px !important;
 }
+
 
 .cloudssh-field label {
     display: block !important;
@@ -5766,30 +5788,34 @@ textarea.tyun-input:focus {
     color: #111827 !important;
 
     font-size: 12px !important;
-    line-height: 1.2 !important;
-
     font-weight: 700 !important;
 }
 
 
-/* IP + 端口 */
+/* =========================
+   IP + 端口
+   ========================= */
 
 .cloudssh-field-row {
     width: 100% !important;
 
     display: grid !important;
 
-    grid-template-columns: minmax(0, 1fr) 102px !important;
+    grid-template-columns:
+        minmax(0, 1fr)
+        102px !important;
 
     gap: 10px !important;
 }
 
 
-/* 输入框 */
+/* =========================
+   所有输入框
+   ========================= */
 
 .cloudssh-input-box {
     width: 100% !important;
-    height: 43px !important;
+    height: 44px !important;
 
     padding: 0 12px !important;
 
@@ -5805,8 +5831,7 @@ textarea.tyun-input:focus {
 
     border-radius: 11px !important;
 
-    box-shadow:
-        inset 0 1px 0 rgba(15,23,42,.02) !important;
+    box-shadow: none !important;
 
     transition:
         border-color .18s ease,
@@ -5814,20 +5839,25 @@ textarea.tyun-input:focus {
         background .18s ease !important;
 }
 
+
 .cloudssh-input-box:hover {
     border-color: #fdba74 !important;
 
     background: #fffdfa !important;
 }
 
+
 .cloudssh-input-box:focus-within {
-    border-color: #ff7a00 !important;
+    border-color: #ff7600 !important;
 
     background: #ffffff !important;
 
     box-shadow:
-        0 0 0 3px rgba(255,122,0,.08) !important;
+        0 0 0 3px rgba(255,118,0,.08) !important;
 }
+
+
+/* 输入框里面文字 */
 
 .cloudssh-input-box input {
     min-width: 0 !important;
@@ -5848,16 +5878,52 @@ textarea.tyun-input:focus {
     font-weight: 500 !important;
 }
 
+
 .cloudssh-input-box input::placeholder {
     color: #94a3b8 !important;
 }
 
 
-/* 认证方式 */
+/* =========================
+   端口前面的 : 改成 #
+   ========================= */
+
+/*
+   你现在 auth-form.ts 里面端口前面实际是：
+   <span>:</span>
+
+   这里不用动 TS，
+   CSS 直接把 : 隐藏，
+   再显示 #
+*/
+
+.port-field .cloudssh-input-box > span {
+    font-size: 0 !important;
+
+    color: #475569 !important;
+
+    font-weight: 800 !important;
+}
+
+
+.port-field .cloudssh-input-box > span::after {
+    content: "#";
+
+    font-size: 16px !important;
+
+    color: #475569 !important;
+
+    font-weight: 800 !important;
+}
+
+
+/* =========================
+   登录方式按钮
+   ========================= */
 
 .cloudssh-auth-tabs {
     width: 100% !important;
-    height: 38px !important;
+    height: 40px !important;
 
     margin-bottom: 10px !important;
 
@@ -5866,13 +5932,15 @@ textarea.tyun-input:focus {
     gap: 10px !important;
 }
 
+
 .auth-tab {
     flex: 1 !important;
 
-    height: 38px !important;
+    height: 40px !important;
 
     border: 1px solid #e5e7eb !important;
-    border-radius: 9px !important;
+
+    border-radius: 10px !important;
 
     background: #ffffff !important;
 
@@ -5881,6 +5949,8 @@ textarea.tyun-input:focus {
     font-size: 12px !important;
     font-weight: 700 !important;
 
+    cursor: pointer !important;
+
     transition:
         border-color .18s ease,
         background .18s ease,
@@ -5888,18 +5958,22 @@ textarea.tyun-input:focus {
         transform .18s ease !important;
 }
 
+
 .auth-tab:hover {
     border-color: #fdba74 !important;
 
     background: #fffaf5 !important;
 }
 
+
+/* 当前选中的登录方式 */
+
 .auth-tab-active {
     background:
         linear-gradient(
             135deg,
             #ff7600,
-            #ff982a
+            #ff9828
         ) !important;
 
     border-color: #ff7600 !important;
@@ -5907,15 +5981,63 @@ textarea.tyun-input:focus {
     color: #ffffff !important;
 
     box-shadow:
-        0 6px 14px rgba(255,122,0,.14) !important;
+        0 6px 15px rgba(255,118,0,.15) !important;
 }
 
 
-/* 节点区域 */
+/* 密码按钮前面增加锁 */
+
+#auth-tab-password::before {
+    content: "🔒";
+
+    margin-right: 6px;
+
+    font-size: 12px;
+}
+
+
+/* SSH 密钥按钮前面增加钥匙 */
+
+#auth-tab-key::before {
+    content: "🔑";
+
+    margin-right: 6px;
+
+    font-size: 12px;
+}
+
+
+/* =========================
+   密码框
+   ========================= */
+
+#auth-password-section {
+    margin-top: 0 !important;
+}
+
+
+/* 密码框左侧旧钥匙稍微统一 */
+
+#auth-password-section .cloudssh-input-box > span {
+    display: flex !important;
+
+    align-items: center !important;
+
+    justify-content: center !important;
+
+    width: 18px;
+
+    flex: 0 0 18px;
+}
+
+
+/* =========================
+   节点区域
+   ========================= */
 
 #anon-region {
     width: 100% !important;
-    height: 43px !important;
+    height: 44px !important;
 
     padding: 0 12px !important;
 
@@ -5932,19 +6054,23 @@ textarea.tyun-input:focus {
     outline: none !important;
 }
 
+
 #anon-region:hover {
     border-color: #fdba74 !important;
 }
 
+
 #anon-region:focus {
-    border-color: #ff7a00 !important;
+    border-color: #ff7600 !important;
 
     box-shadow:
-        0 0 0 3px rgba(255,122,0,.08) !important;
+        0 0 0 3px rgba(255,118,0,.08) !important;
 }
 
 
-/* 记住服务器地址 */
+/* =========================
+   记住服务器地址
+   ========================= */
 
 .cloudssh-remember {
     margin: 10px 0 0 0 !important;
@@ -5960,6 +6086,7 @@ textarea.tyun-input:focus {
     font-size: 12px !important;
 }
 
+
 .cloudssh-remember input {
     width: 15px !important;
     height: 15px !important;
@@ -5968,15 +6095,18 @@ textarea.tyun-input:focus {
 }
 
 
-/* 连接按钮 */
+/* =========================
+   连接服务器按钮
+   ========================= */
 
 #connect-btn {
     width: 100% !important;
-    height: 48px !important;
+    height: 50px !important;
 
     margin-top: 16px !important;
 
     border: none !important;
+
     border-radius: 12px !important;
 
     background:
@@ -5994,7 +6124,7 @@ textarea.tyun-input:focus {
     cursor: pointer !important;
 
     box-shadow:
-        0 10px 22px rgba(255,122,0,.20) !important;
+        0 10px 22px rgba(255,118,0,.20) !important;
 
     transition:
         transform .18s ease,
@@ -6002,28 +6132,32 @@ textarea.tyun-input:focus {
         filter .18s ease !important;
 }
 
+
 #connect-btn:hover {
     opacity: 1 !important;
 
     transform: translateY(-1px) !important;
 
-    filter: brightness(1.02) !important;
+    filter: brightness(1.03) !important;
 
     box-shadow:
-        0 14px 28px rgba(255,122,0,.25) !important;
+        0 14px 28px rgba(255,118,0,.26) !important;
 }
+
 
 #connect-btn:active {
     transform: translateY(0) !important;
 }
 
 
-/* 错误提示 */
+/* =========================
+   错误提示
+   ========================= */
 
 .cloudssh-error {
-    margin-top: 8px !important;
-
     min-height: 16px !important;
+
+    margin-top: 8px !important;
 
     color: #ef4444 !important;
 
@@ -6031,7 +6165,9 @@ textarea.tyun-input:focus {
 }
 
 
-/* 右侧底部状态 */
+/* =========================
+   底部状态
+   ========================= */
 
 .cloudssh-status {
     min-height: 20px !important;
@@ -6054,6 +6190,7 @@ textarea.tyun-input:focus {
     font-weight: 700 !important;
 }
 
+
 .status-dot {
     width: 8px !important;
     height: 8px !important;
@@ -6067,6 +6204,7 @@ textarea.tyun-input:focus {
     box-shadow:
         0 0 0 3px rgba(34,197,94,.10) !important;
 }
+
 
 /* =========================================================
    7. 小屏幕首页适配
